@@ -1,0 +1,299 @@
+---
+title: "Model update"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(rms)
+library(glmnet)
+library(tidyr)
+library(dplyr)
+library(ROCit)
+```
+
+This notebook updates the model applying recalibration, and then adding one more predictor
+
+```{r message=FALSE, cache=F}
+source('./mdl-evaluation.R')
+
+num_imp <-100   # Number of multiple imputations
+num_boot <- 200  # Number of bootstrap samples
+random_seed <- 151  # Setting random seed for reproducibility
+```
+
+TODO:
+* Remove children (<= 18)
+* K is bimodal - transform
+Colinear groups:
+  * BUN and CRE
+  * ALT/AST 
+  * AST/Ck/K
+  * https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
+  * https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
+Comparing imputation vs complete case models
+
+```{r}
+base_model <- function(df) {
+  LP = with(df, 
+            0.86215 - 
+              0.05343*age + 
+              3*10^-5*max(age - 5.0, 0)^3 - 
+              6*10^-5*max(age - 30.0, 0)^3 + 
+              3*10^-5*max(age - 58.0, 0)^3 - 
+              0.8694*ct12)
+  return(LP)
+}
+```
+
+```{r}
+data = read.csv('data.csv')
+#load('./Model1_vars.rds')
+#data$out = factor(data$out, levels = c(0,1))
+data$ct12 = (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
+data$ct34 = (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
+data$ct56 = (data$ct56 - mean(data$ct56, na.rm=T))/sd(data$ct56, na.rm=T)
+
+data_adults <- data %>% filter(age >= 15 & age < 18)
+v <- c('bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
+data_adults[v]
+```
+
+```{r}
+vars = c('out', 'age', 'ct12')
+df_lp = data %>% select(all_of(vars))
+
+#df_cc = df[complete.cases(df),]
+#LP_cc = unlist(map(1:nrow(df_cc), function(x) base_model(df_cc[x,])))
+
+LP = unlist(map(1:nrow(df_lp), function(x) base_model(df_lp[x,])))
+data['lp'] <- LP
+data
+```
+
+```{r}
+# Extract single frame from MI data
+# https://stackoverflow.com/a/42820029
+getImpute <- function(impute, df, im) {
+  cbind.data.frame(impute.transcan(x = impute, 
+                                   imputation = im, 
+                                   data = df, 
+                                   list.out = TRUE, 
+                                   pr = FALSE))
+}
+
+
+selectVariables <- function(rseed, nimp, fimp, train_data, inc_ct) {
+  set.seed(rseed)
+  
+  # Generate imputed datasets
+  formula <- as.formula(fimp)
+  imp_data <- aregImpute(formula, data=train_data, n.impute=nimp)
+
+  # Setup the LASSO
+  
+  # alpha=0 is Ridge Regression (L1 norm penalty only)
+  # alpha=0.5 is elastic net (mixture of L1 and L2 at a 50%)
+  # alpha=1 is lasso (L2 norm penalty only)
+  aelast = 0.5 # actually, we are using the elastic net
+  
+  # Set binomial as the prediction family so we run logistic regression
+  predfam = "binomial"
+  
+  # Iterate over imputations
+  coeffs <- list()
+  for (i in 1:nimp) {
+    df <- getImpute(impute=imp_data, df=train_data, im=i)
+    # Get outcome and predictor variables
+    y <- as.matrix(df[,1])    
+    x <- as.matrix(df[,2:ncol(df)])
+    
+    # Finds optimal lambda by cross-validation
+    cv <- cv.glmnet(x, y, family=predfam, alpha=aelast, nfolds=10)
+    lbest <- cv$lambda.min
+    
+    # Fit model
+    fit <- glmnet(x, y, family=predfam, alpha=aelast, lambda=lbest)
+
+    # Store coefficients  
+    coeffs[[i]] <- coef(fit, s = "lambda.min")
+  }
+  
+  ncoeff <- length(rownames(coeffs[[1]]))
+  counts <- list()
+  for (v in 1:ncoeff) {
+    name <- rownames(coeffs[[1]])[v]
+    c <- 0.0  
+    for (i in 1:nimp) {
+      if (0 < coeffs[[i]][v]) {
+        c <- c + 1    
+      }
+    }
+    counts[[name]] <- c/nimp  
+  }
+  
+  # Sorting the counts https://stackoverflow.com/a/30651395
+  counts <- counts[order(unlist(counts), decreasing=TRUE)]
+  
+  # And print out...
+  res_names <- c()
+  res_counts <- c()    
+  for (k in names(counts)) {    
+    n <- counts[[k]]
+    cat(k, counts[[k]], '\n')
+    res_names <- c(res_names, k)
+    res_counts <- c(res_counts, n)
+  }  
+  
+  newList <- list("names" = res_names, "counts" = res_counts)
+}
+```
+
+```{r}
+sat_imp_formula <- '~out+lp+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12'
+
+vars <- c('out', 'lp', 'bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
+tr_data <- data[vars]
+
+selection <- selectVariables(random_seed, 3, sat_imp_formula, tr_data, TRUE)
+
+sel_df <- data.frame(unlist(selection$names), unlist(selection$counts))
+names(sel_df) <- c("Variable", "Freq")
+sel_df
+
+#formula <- as.formula(sat_imp_formula)
+#imp_data <- aregImpute(formula, data=tr_data, n.impute=1)
+
+#print(imp_data)
+
+#f <- cbind.data.frame(impute.transcan(x = imp_data, imputation = 1, data = tr_data, list.out = TRUE, pr = FALSE))
+#print(f)
+  
+```
+
+
+```{r}
+# Trims leading and trailing whitespaces
+# https://stackoverflow.com/a/21882152
+trim <- function(x) {
+  return(gsub("(^[[:space:]]+|[[:space:]]+$)", "", x))
+}
+
+
+saveToTXT <- function(obj, dir, fn) {
+  sink(paste0(dir, "/", fn), append=FALSE, split=FALSE)
+  print(obj)
+  sink()    
+}
+
+saveEvaluation <- function(an, val, cal, dir) {
+  print(val)
+  plot(cal)
+  
+  saveToTXT(an, dir, "anova.txt")
+  saveToPDF(an, dir, "anova.pdf")
+  
+  saveToTXT(val, dir, "validation.txt")
+  saveToPDF(cal, dir, "calibration.pdf")
+}
+
+saveToPDF <- function(obj, dir, fn) {
+  pdf(paste0(dir, "/", fn), useDingbats=FALSE)
+  plot(obj)
+  dev.off()
+}
+
+saveModelToCSV <- function(f, vars, dir) {
+  terms = names(f$coefficients)
+  coeff = unname(f$coefficients)
+  
+  # Extract RCS knots from model specs. 
+  # This code is now specific to get the knots for age and fever temperature, 
+  # but it could be generalized easily by providing a list with all the 
+  # variables modeled as RCS.
+  
+  spec = specs(f)
+  # print(str(spec)) # This is useful to understand the structure of the object
+  
+  ageIdx <- which(vars == "PatientAge")
+  ctIdx <- which(vars == "CT")
+  
+  ageKnots <- spec$how.modeled[ageIdx, 2]
+  ctKnots <- spec$how.modeled[ctIdx, 2]
+  ageKnots <- trim(ageKnots)
+  ctKnots <- trim(ctKnots)
+  
+  types <- rep.int("linear", length(terms))
+  knots = rep.int("none", length(terms))
+  
+  age0 <- which(terms == "PatientAge")
+  age1 <- which(terms == "PatientAge'")
+  
+  ct0 <- which(terms == "CT")
+  ct1 <- which(terms == "CT'")
+  
+  types[age0] <- "RCS0"
+  types[age1] <- "RCS1"
+  knots[age1] <- ageKnots
+  
+  types[ct0] <- "RCS0"
+  types[ct1] <- "RCS1"
+  knots[ct1] <- ctKnots
+  
+  model <- data.frame("Term" = terms, "Coefficient" = coeff, "Type" = types, "Knots" = knots)
+  write.table(model, file = paste0(dir, "/model.csv"), sep = ",", row.names=FALSE, qmethod = "double")    
+}
+
+saveDescription <- function(f, vars, dir) {
+  print(f)
+  
+  saveToTXT(f, dir, "model.txt")
+  saveToTXT(specs(f), dir, "specs.txt")
+  
+  saveModelToCSV(f, vars, dir)    
+}
+
+
+generateModel <- function(rseed, nimp, nboot, imp_formula, model_formula, train_data, vars, dir) {
+  set.seed(rseed)
+  
+  # Impute data and fit pooled model
+  imp_data <- aregImpute(as.formula(imp_formula), data=train_data, n.impute=nimp)
+  model <- fit.mult.impute(as.formula(model_formula), lrm, imp_data, data=train_data)
+  
+  save(imp_formula, model_formula, train_data, imp_data, model, rseed, nimp, nboot, file =  paste0(dir, "/model.RData"))
+  
+  # Calculate ANOVA and validation/calibration
+  mdl_anv <- anova(model)
+  mdl_upd <- update(model, x=TRUE, y=TRUE)
+  mdl_val <- validate(mdl_upd, B=nboot)
+  mdl_cal <- calibrate(mdl_upd, B=nboot)
+  
+  # Calculate distribution summaries for potential predictor variables
+  saveDescription(f=model, vars=vars, dir=dir)
+  saveEvaluation(an=mdl_anv, val=mdl_val, cal=mdl_cal, dir=dir)
+
+  return(model)
+}
+```
+
+```{r}
+mdl_vars <- c('lp', 'alt12', 'ast12', 'ck12', 'bun12', 'k12')
+
+mdl_imp_formula <- "~out+lp+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12"
+
+mdl_lgr_formula <- "out~lp+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12"
+
+mdl_folder <- "model-days12"
+dir.create(mdl_folder)
+
+model <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula, mdl_lgr_formula, tr_data, mdl_vars, mdl_folder)
+```
+
+```{r}
+p = val.prob(y = as.numeric(df_cc$out), logit = LP) # initial performance
+AUC_list = list()
+AUC_list['Original'] = p["C (ROC)"]
+```

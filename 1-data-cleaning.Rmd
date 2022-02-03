@@ -1,0 +1,58 @@
+---
+title: "Data cleanup"
+output:
+  html_document:
+    df_print: paged
+---
+
+This notebook cleans up the DRC data by keeping only a subset of clinical chemistry vars, and aggregating values every two days.
+
+```{r setup, include=FALSE}
+library(dplyr)
+```
+
+```{r}
+df_raw <- read.csv('./DRC_EbolaPos_Database_2018Outbreak_Coded_2021_08_13-numeric.csv', na.strings=c(""))
+```
+
+```{r}
+test_days <- c('.D1', '.D2', '.D3', '.D4', '.D5', '.D6')
+lab_vars <- c('Lab.CtNP', 'Lab.AmLyteBUN', 'Lab.AmLyteALT', 'Lab.AmLyteAST', 'Lab.AmLyteCK', 'Lab.AmLyteALB', 'Lab.AmLyteK', 'Lab.AmLyteCRE', 'Lab.AmLyteCRP')
+short_names <- c('Lab.CtNP'='ct', 'Lab.AmLyteBUN'='bun', 'Lab.AmLyteALT'='alt', 'Lab.AmLyteAST'='ast', 'Lab.AmLyteCK'='ck', 'Lab.AmLyteALB'='alb', 'Lab.AmLyteK'='k', 'Lab.AmLyteCRE'='cre', 'Lab.AmLyteCRP'='crp')
+```
+
+```{r}
+# Variable selection
+df_1to6 <- df_raw %>% select(ends_with(test_days))
+df_labs <- df_1to6 %>% select(starts_with(lab_vars))
+df_labs
+```
+
+```{r}
+# Variable aggregation into final dataset
+
+df_final = data.frame(age=pull(df_raw, 'AD.Age'))
+df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1, 
+               ifelse(df_raw$S7.FinalStatus==1, 0, 
+                      df_raw$S7.FinalStatus))
+
+for (var in lab_vars) {
+  vars12 <- paste0(paste0(var, '.D'), 1:2)
+  v12 = paste0(short_names[var], '12')
+  df_final[v12] <- rowMeans(df_labs[vars12], na.rm = TRUE)
+  
+  vars34 <- paste0(paste0(var, '.D'), 3:4)
+  v34 = paste0(short_names[var], '34')
+  df_final[v34] <- rowMeans(df_labs[vars34], na.rm = TRUE)
+  
+  vars56 <- paste0(paste0(var, '.D'), 5:6)
+  v56 = paste0(short_names[var], '56')
+  df_final[v56] <- rowMeans(df_labs[vars56], na.rm = TRUE)
+}
+
+df_final
+```
+
+```{r}
+write.csv(df_final, './data.csv', row.names = F)
+```
