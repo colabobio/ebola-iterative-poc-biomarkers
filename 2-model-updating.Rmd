@@ -11,6 +11,7 @@ library(rms)
 library(glmnet)
 library(tidyr)
 library(dplyr)
+library(purrr)
 library(ROCit)
 ```
 
@@ -18,6 +19,7 @@ This notebook updates the model applying recalibration, and then adding one more
 
 ```{r message=FALSE, cache=F}
 source('./mdl-evaluation.R')
+source('./mdl-selection.R')
 
 num_imp <-100   # Number of multiple imputations
 num_boot <- 200  # Number of bootstrap samples
@@ -26,6 +28,9 @@ random_seed <- 151  # Setting random seed for reproducibility
 
 TODO:
 * Remove children (<= 18)
+data_adults <- data %>% filter(age >= 15 & age < 18)
+v <- c('bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
+data_adults[v]
 * K is bimodal - transform
 Colinear groups:
   * BUN and CRE
@@ -34,266 +39,219 @@ Colinear groups:
   * https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
   * https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
 Comparing imputation vs complete case models
+* Use data from prev day to train next
 
 ```{r}
+# Construct the base prognostic model that only uses age and Ct in the first 48 hours
+
 base_model <- function(df) {
-  LP = with(df, 
+  # Calculate the linear term in the logistic function of the model
+  # p(x) = 1 / (1+exp(-lp(x))
+  lp = with(df, 
             0.86215 - 
               0.05343*age + 
               3*10^-5*max(age - 5.0, 0)^3 - 
               6*10^-5*max(age - 30.0, 0)^3 + 
               3*10^-5*max(age - 58.0, 0)^3 - 
               0.8694*ct12)
-  return(LP)
+  return(lp)
 }
 ```
 
 ```{r}
-data = read.csv('data.csv')
-#load('./Model1_vars.rds')
-#data$out = factor(data$out, levels = c(0,1))
-data$ct12 = (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
-data$ct34 = (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
-data$ct56 = (data$ct56 - mean(data$ct56, na.rm=T))/sd(data$ct56, na.rm=T)
+# Load the data and transform Ct values into Z-scores
 
-data_adults <- data %>% filter(age >= 15 & age < 18)
-v <- c('bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
-data_adults[v]
+data <- read.csv('data.csv')
+data$ct12 <- (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
+data$ct34 <- (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
+data$ct56 <- (data$ct56 - mean(data$ct56, na.rm=T))/sd(data$ct56, na.rm=T)
 ```
 
 ```{r}
-vars = c('out', 'age', 'ct12')
-df_lp = data %>% select(all_of(vars))
+# Add the logit contribution from the base model to the dataframe
 
-#df_cc = df[complete.cases(df),]
-#LP_cc = unlist(map(1:nrow(df_cc), function(x) base_model(df_cc[x,])))
+vars0 <- c('out', 'age', 'ct12')
+all_data0 <- data %>% select(all_of(vars0)) # This dataframe includes missing entries
 
-LP = unlist(map(1:nrow(df_lp), function(x) base_model(df_lp[x,])))
-data['lp'] <- LP
+lp0 <- unlist(map(1:nrow(all_data0), function(x) base_model(all_data0[x,])))
+data['lp0'] <- lp0
 data
 ```
 
+
 ```{r}
-# Extract single frame from MI data
-# https://stackoverflow.com/a/42820029
-getImpute <- function(impute, df, im) {
-  cbind.data.frame(impute.transcan(x = impute, 
-                                   imputation = im, 
-                                   data = df, 
-                                   list.out = TRUE, 
-                                   pr = FALSE))
-}
+# Plot calibration and ROC plots of the base model
 
+mdl_folder0 <- "model-0"
+dir.create(mdl_folder0)
 
-selectVariables <- function(rseed, nimp, fimp, train_data, inc_ct) {
-  set.seed(rseed)
-  
-  # Generate imputed datasets
-  formula <- as.formula(fimp)
-  imp_data <- aregImpute(formula, data=train_data, n.impute=nimp)
+data0 <- all_data0[complete.cases(all_data0),]
 
-  # Setup the LASSO
-  
-  # alpha=0 is Ridge Regression (L1 norm penalty only)
-  # alpha=0.5 is elastic net (mixture of L1 and L2 at a 50%)
-  # alpha=1 is lasso (L2 norm penalty only)
-  aelast = 0.5 # actually, we are using the elastic net
-  
-  # Set binomial as the prediction family so we run logistic regression
-  predfam = "binomial"
-  
-  # Iterate over imputations
-  coeffs <- list()
-  for (i in 1:nimp) {
-    df <- getImpute(impute=imp_data, df=train_data, im=i)
-    # Get outcome and predictor variables
-    y <- as.matrix(df[,1])    
-    x <- as.matrix(df[,2:ncol(df)])
-    
-    # Finds optimal lambda by cross-validation
-    cv <- cv.glmnet(x, y, family=predfam, alpha=aelast, nfolds=10)
-    lbest <- cv$lambda.min
-    
-    # Fit model
-    fit <- glmnet(x, y, family=predfam, alpha=aelast, lambda=lbest)
+pred0 <- unlist(map(1:nrow(data0), function(x) base_model(data0[x,]))) # prediction in log-odds (probabilities on logit scale)
+prob0 <- 1 / (1 + exp(-pred0))                                         # prediction as probability response
 
-    # Store coefficients  
-    coeffs[[i]] <- coef(fit, s = "lambda.min")
-  }
-  
-  ncoeff <- length(rownames(coeffs[[1]]))
-  counts <- list()
-  for (v in 1:ncoeff) {
-    name <- rownames(coeffs[[1]])[v]
-    c <- 0.0  
-    for (i in 1:nimp) {
-      if (0 < coeffs[[i]][v]) {
-        c <- c + 1    
-      }
-    }
-    counts[[name]] <- c/nimp  
-  }
-  
-  # Sorting the counts https://stackoverflow.com/a/30651395
-  counts <- counts[order(unlist(counts), decreasing=TRUE)]
-  
-  # And print out...
-  res_names <- c()
-  res_counts <- c()    
-  for (k in names(counts)) {    
-    n <- counts[[k]]
-    cat(k, counts[[k]], '\n')
-    res_names <- c(res_names, k)
-    res_counts <- c(res_counts, n)
-  }  
-  
-  newList <- list("names" = res_names, "counts" = res_counts)
-}
+# Generate the data frame with the data needed for the calibration and ROC plots
+plot_data0 <- data.frame(out = data0$out, logodds = pred0, prob = prob0)
+
+cal_plot(base_model, plot_data0, "original", "prob", model_label = '', dir = mdl_folder0, fn = "cal_plot.pdf")
+roc_plot(data0$out, prob0, dir = mdl_folder0, fn = "roc_plot.pdf")
+```
+
+UPDATED MODEL FOR DAYS 1-2
+
+```{r}
+# Apply the Elastic Net variable selecion method on all the lab variables available for days 1-2
+
+sat_imp_formula12 <- '~out+lp0+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12'
+
+vars12 <- c('out', 'lp0', 'bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
+data12 <- data[vars12]
+
+sel12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
+
+seldf12 <- data.frame(unlist(sel12$names), unlist(sel12$counts))
+names(seldf12) <- c("Variable", "Freq")
+seldf12
 ```
 
 ```{r}
-sat_imp_formula <- '~out+lp+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12'
+# Train the model for days 1-2 on the selected variables
 
-vars <- c('out', 'lp', 'bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
-tr_data <- data[vars]
+mdl_vars12 <- c('lp0', 'alt12', 'ast12', 'ck12', 'bun12', 'k12')
 
-selection <- selectVariables(random_seed, 3, sat_imp_formula, tr_data, TRUE)
+mdl_imp_formula12 <- "~out+lp0+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12"
+mdl_lgr_formula12 <- "out~lp0+bun12+alt12+ast12+ck12+k12"
 
-sel_df <- data.frame(unlist(selection$names), unlist(selection$counts))
-names(sel_df) <- c("Variable", "Freq")
-sel_df
+mdl_folder12 <- "model-days12"
+dir.create(mdl_folder12)
 
-#formula <- as.formula(sat_imp_formula)
-#imp_data <- aregImpute(formula, data=tr_data, n.impute=1)
+model12 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula12, mdl_lgr_formula12, data, mdl_vars12, mdl_folder12)
+```
 
-#print(imp_data)
+```{r}
+# Generate the calibration and ROC plots for the models for days 1-2
 
-#f <- cbind.data.frame(impute.transcan(x = imp_data, imputation = 1, data = tr_data, list.out = TRUE, pr = FALSE))
-#print(f)
-  
+vars <- append(mdl_vars12, 'out')
+df <- data %>% select(all_of(vars))
+data12 <- df[complete.cases(df),]
+
+pred12 <- predict(model12, data12) # prediction in log-odds (probabilities on logit scale)
+probs12 <- 1 / (1 + exp(-pred12))  # prediction as probability response
+
+# Generate the data frame with the data needed for the calibration and ROC plots
+plot_data12 <- data.frame(out = data12$out, logodds = pred12, prob = probs12)
+
+cal_plot(model12, plot_data12, "original", "prob", model_label = '', dir = mdl_folder12, fn = "cal_plot.pdf")
+roc_plot(plot_data12$out, plot_data12$prob, dir = mdl_folder12, fn = "roc_plot.pdf")
 ```
 
 
 ```{r}
-# Trims leading and trailing whitespaces
-# https://stackoverflow.com/a/21882152
-trim <- function(x) {
-  return(gsub("(^[[:space:]]+|[[:space:]]+$)", "", x))
-}
+# Add the logit contribution from the model for days 1-2 to the dataframe
 
+lp12 <- predict(model12, data)
+data['lp12'] <- lp12
+```
 
-saveToTXT <- function(obj, dir, fn) {
-  sink(paste0(dir, "/", fn), append=FALSE, split=FALSE)
-  print(obj)
-  sink()    
-}
+UPDATED MODEL FOR DAYS 3-4
 
-saveEvaluation <- function(an, val, cal, dir) {
-  print(val)
-  plot(cal)
-  
-  saveToTXT(an, dir, "anova.txt")
-  saveToPDF(an, dir, "anova.pdf")
-  
-  saveToTXT(val, dir, "validation.txt")
-  saveToPDF(cal, dir, "calibration.pdf")
-}
+```{r}
+# Apply the Elastic Net variable selecion method on all the lab variables available for days 3-4
 
-saveToPDF <- function(obj, dir, fn) {
-  pdf(paste0(dir, "/", fn), useDingbats=FALSE)
-  plot(obj)
-  dev.off()
-}
+sat_imp_formula34 <- '~out+lp12+bun34+alt34+ast34+ck34+alb34+k34+cre34+crp34'
 
-saveModelToCSV <- function(f, vars, dir) {
-  terms = names(f$coefficients)
-  coeff = unname(f$coefficients)
-  
-  # Extract RCS knots from model specs. 
-  # This code is now specific to get the knots for age and fever temperature, 
-  # but it could be generalized easily by providing a list with all the 
-  # variables modeled as RCS.
-  
-  spec = specs(f)
-  # print(str(spec)) # This is useful to understand the structure of the object
-  
-  ageIdx <- which(vars == "PatientAge")
-  ctIdx <- which(vars == "CT")
-  
-  ageKnots <- spec$how.modeled[ageIdx, 2]
-  ctKnots <- spec$how.modeled[ctIdx, 2]
-  ageKnots <- trim(ageKnots)
-  ctKnots <- trim(ctKnots)
-  
-  types <- rep.int("linear", length(terms))
-  knots = rep.int("none", length(terms))
-  
-  age0 <- which(terms == "PatientAge")
-  age1 <- which(terms == "PatientAge'")
-  
-  ct0 <- which(terms == "CT")
-  ct1 <- which(terms == "CT'")
-  
-  types[age0] <- "RCS0"
-  types[age1] <- "RCS1"
-  knots[age1] <- ageKnots
-  
-  types[ct0] <- "RCS0"
-  types[ct1] <- "RCS1"
-  knots[ct1] <- ctKnots
-  
-  model <- data.frame("Term" = terms, "Coefficient" = coeff, "Type" = types, "Knots" = knots)
-  write.table(model, file = paste0(dir, "/model.csv"), sep = ",", row.names=FALSE, qmethod = "double")    
-}
+vars34 <- c('out', 'lp12', 'bun34', 'alt34', 'ast34', 'ck34', 'alb34', 'k34', 'cre34', 'crp34')
+data34 <- data[vars34]
 
-saveDescription <- function(f, vars, dir) {
-  print(f)
-  
-  saveToTXT(f, dir, "model.txt")
-  saveToTXT(specs(f), dir, "specs.txt")
-  
-  saveModelToCSV(f, vars, dir)    
-}
+sel34 <- selectVariables(random_seed, num_imp, sat_imp_formula34, data34, TRUE)
 
-
-generateModel <- function(rseed, nimp, nboot, imp_formula, model_formula, train_data, vars, dir) {
-  set.seed(rseed)
-  
-  # Impute data and fit pooled model
-  imp_data <- aregImpute(as.formula(imp_formula), data=train_data, n.impute=nimp)
-  model <- fit.mult.impute(as.formula(model_formula), lrm, imp_data, data=train_data)
-  
-  save(imp_formula, model_formula, train_data, imp_data, model, rseed, nimp, nboot, file =  paste0(dir, "/model.RData"))
-  
-  # Calculate ANOVA and validation/calibration
-  mdl_anv <- anova(model)
-  mdl_upd <- update(model, x=TRUE, y=TRUE)
-  mdl_val <- validate(mdl_upd, B=nboot)
-  mdl_cal <- calibrate(mdl_upd, B=nboot)
-  
-  # Calculate distribution summaries for potential predictor variables
-  saveDescription(f=model, vars=vars, dir=dir)
-  saveEvaluation(an=mdl_anv, val=mdl_val, cal=mdl_cal, dir=dir)
-
-  return(model)
-}
+seldf34 <- data.frame(unlist(sel34$names), unlist(sel34$counts))
+names(seldf34) <- c("Variable", "Freq")
+seldf34
 ```
 
 ```{r}
-mdl_vars <- c('lp', 'alt12', 'ast12', 'ck12', 'bun12', 'k12')
+# Train the model for days 3-4 on the selected variables
 
-mdl_imp_formula <- "~out+lp+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12"
+mdl_vars34 <- c('lp12', 'alt34', 'ast34', 'ck34', 'cre34', 'k34')
 
-mdl_lgr_formula <- "out~lp+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12"
+mdl_imp_formula34 <- "~out+lp12+bun34+alt34+ast34+ck34+alb34+k34+cre34+crp34"
+mdl_lgr_formula34 <- "out~lp12+alt34+ast34+ck34+cre34+k34"
 
-mdl_folder <- "model-days12"
-dir.create(mdl_folder)
+mdl_folder34 <- "model-days34"
+dir.create(mdl_folder34)
 
-model <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula, mdl_lgr_formula, tr_data, mdl_vars, mdl_folder)
+model34 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula34, mdl_lgr_formula34, data, mdl_vars34, mdl_folder34)
 ```
 
 ```{r}
-p = val.prob(y = as.numeric(df_cc$out), logit = LP) # initial performance
-AUC_list = list()
-AUC_list['Original'] = p["C (ROC)"]
+# Generate the calibration and ROC plots for the models for days 3-4
+
+vars <- append(mdl_vars34, 'out')
+df <- data %>% select(all_of(vars))
+data34 <- df[complete.cases(df),]
+
+pred34 <- predict(model34, data34) # prediction in log-odds (probabilities on logit scale)
+probs34 <- 1 / (1 + exp(-pred34))  # prediction as probability response
+
+# Generate the data frame with the data needed for the calibration and ROC plots
+plot_data34 <- data.frame(out = data34$out, logodds = pred34, prob = probs34)
+
+cal_plot(model34, plot_data34, "original", "prob", model_label = '', dir = mdl_folder34, fn = "cal_plot.pdf")
+roc_plot(plot_data34$out, plot_data34$prob, dir = mdl_folder34, fn = "roc_plot.pdf")
+```
+
+```{r}
+# Add the logit contribution from the model for days 1-2 to the dataframe
+
+lp34 <- predict(model34, data)
+data['lp34'] <- lp34
+```
+
+UPDATED MODEL FOR DAYS 5-6
+
+```{r}
+# Apply the Elastic Net variable selecion method on all the lab variables available for days 5-6
+
+sat_imp_formula56 <- '~out+lp34+bun56+alt56+ast56+ck56+alb56+k56+cre56+crp56'
+
+vars56 <- c('out', 'lp34', 'bun56', 'alt56', 'ast56', 'ck56', 'alb56', 'k56', 'cre56', 'crp56')
+data56 <- data[vars56]
+
+sel56 <- selectVariables(random_seed, num_imp, sat_imp_formula56, data56, TRUE)
+
+seldf56 <- data.frame(unlist(sel56$names), unlist(sel56$counts))
+names(seldf56) <- c("Variable", "Freq")
+seldf56
+```
+
+```{r}
+# Train the model for days 5-6 on the selected variables
+
+mdl_vars56 <- c('lp34', 'bun56', 'ast56')
+
+mdl_imp_formula56 <- "~out+lp34+bun56+alt56+ast56+ck56+alb56+k56+cre56+crp56"
+mdl_lgr_formula56 <- "out~lp34+ast56+bun56"
+
+mdl_folder56 <- "model-days56"
+dir.create(mdl_folder56)
+
+model56 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
+```
+
+```{r}
+# Generate the calibration and ROC plots for the models for days 5-6
+
+vars <- append(mdl_vars56, 'out')
+df <- data %>% select(all_of(vars))
+data56 <- df[complete.cases(df),]
+
+pred56 <- predict(model56, data56) # prediction in log-odds (probabilities on logit scale)
+probs56 <- 1 / (1 + exp(-pred56))  # prediction as probability response
+
+# Generate the data frame with the data needed for the calibration and ROC plots
+plot_data56 <- data.frame(out = data56$out, logodds = pred56, prob = probs56)
+
+cal_plot(model56, plot_data56, "original", "prob", model_label = '', dir = mdl_folder56, fn = "cal_plot.pdf")
+roc_plot(plot_data56$out, plot_data56$prob, dir = mdl_folder56, fn = "roc_plot.pdf")
 ```
