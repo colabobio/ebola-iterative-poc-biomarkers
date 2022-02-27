@@ -32,15 +32,16 @@ TODO:
 
 Comparing imputation vs complete case models
 * Use data from prev day to train next
-* K is bimodal - transform
+* Take max of all variables but K
+* K is bimodal - transform into monotonic
+* Automatize var selection with threshold per day group
 
-
-Colinear groups:
-  * BUN and CRE
-  * ALT/AST 
-  * AST/Ck/K
-  * https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
-  * https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
+* Look into colinear groups:
+  - BUN and CRE
+  - ALT/AST 
+  - AST/Ck/K
+  - https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
+  - https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
 
 
 ```{r}
