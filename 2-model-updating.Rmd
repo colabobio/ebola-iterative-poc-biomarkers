@@ -29,18 +29,13 @@ min_age <- 15       #  Minimum age for inclusion in analysis
 ```
 
 TODO:
-
-* Take max of all variables but K
-* K is bimodal - transform into monotonic
-
-* Comparing imputation vs complete case models
 * Look into colinear groups:
-  - BUN and CRE
+  - BUN/CRE
   - ALT/AST 
-  - AST/Ck/K
+  - AST/CK/K
   - https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
   - https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
-
+* Comparing imputation vs complete case models
 
 ```{r}
 # Load the data, remove children, and transform Ct values into Z-scores
@@ -122,7 +117,7 @@ varf12
 
 ```{r}
 # Apply threshold
-day12_sel_thres <- 0.8
+day12_sel_thres <- 0.75
 sel12 <- varf12 %>% filter(Freq > day12_sel_thres)
 sel12
 ```
@@ -139,7 +134,7 @@ mdl_lgr_formula12
 mdl_folder12 <- "model-days12"
 dir.create(mdl_folder12)
 
-model12 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula12, mdl_lgr_formula12, data, mdl_vars12, mdl_folder12)
+model12 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula12, mdl_lgr_formula12, data, mdl_vars12, mdl_folder12)
 
 # Add the logit contribution from the model for days 1-2 to the dataframe
 data['lp12'] <- predict(model12, data)
@@ -199,7 +194,7 @@ mdl_lgr_formula34
 mdl_folder34 <- "model-days34"
 dir.create(mdl_folder34)
 
-model34 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula34, mdl_lgr_formula34, data, mdl_vars34, mdl_folder34)
+model34 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula34, mdl_lgr_formula34, data, mdl_vars34, mdl_folder34)
 
 # Add the logit contribution from the model for days 3-4 to the dataframe
 data['lp34'] <- predict(model34, data)
@@ -259,7 +254,9 @@ mdl_lgr_formula56
 mdl_folder56 <- "model-days56"
 dir.create(mdl_folder56)
 
-model56 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
+# setting number of knots to zero based on this discussion:
+# https://stats.stackexchange.com/questions/117383/impute-missing-values-using-aregimpute
+model56 <- generateModel(random_seed, num_imp, num_boot, 0, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
 
 # Add the logit contribution from the model for days 3-4 to the dataframe
 data['lp56'] <- predict(model56, data)

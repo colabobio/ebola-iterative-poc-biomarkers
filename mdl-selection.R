@@ -154,11 +154,11 @@ saveDescription <- function(f, vars, dir) {
   saveModelToCSV(f, vars, dir)    
 }
 
-generateModel <- function(rseed, nimp, nboot, imp_formula, model_formula, train_data, vars, dir) {
+generateModel <- function(rseed, nimp, nboot, nknots, imp_formula, model_formula, train_data, vars, dir) {
   set.seed(rseed)
   
   # Impute data and fit pooled model
-  imp_data <- aregImpute(as.formula(imp_formula), data=train_data, n.impute=nimp)
+  imp_data <- aregImpute(as.formula(imp_formula), data=train_data, n.impute=nimp, nk=nknots)
   model <- fit.mult.impute(as.formula(model_formula), lrm, imp_data, data=train_data)
   
   save(imp_formula, model_formula, train_data, imp_data, model, rseed, nimp, nboot, file =  paste0(dir, "/model.RData"))
