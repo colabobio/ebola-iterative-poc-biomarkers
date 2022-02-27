@@ -30,9 +30,6 @@ min_age <- 15       #  Minimum age for inclusion in analysis
 
 TODO:
 
-* Automatize var selection with threshold per day group
-* Use data from prev day to train next
-
 * Take max of all variables but K
 * K is bimodal - transform into monotonic
 
