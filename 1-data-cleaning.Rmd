@@ -9,6 +9,8 @@ This notebook cleans up the DRC data by keeping only a subset of clinical chemis
 
 ```{r setup, include=FALSE}
 library(dplyr)
+library(matrixStats)
+library(naniar)
 ```
 
 ```{r}
@@ -29,27 +31,47 @@ df_labs
 ```
 
 ```{r}
+# Transform K so both extremes (low and high) map to high values
+
+k_vars <- c('Lab.AmLyteK.D1', 'Lab.AmLyteK.D2', 'Lab.AmLyteK.D3', 'Lab.AmLyteK.D4', 'Lab.AmLyteK.D5', 'Lab.AmLyteK.D6')
+
+# From https://www.mayoclinic.org/symptoms/hyperkalemia/basics/definition/sym-20050776
+k_normal = 4.4
+
+for (var in k_vars) {
+    m1 <- colMeans(df_labs[var], na.rm = TRUE)
+    print(m1)
+    df_labs[var] <- (df_labs[var] - k_normal) * (df_labs[var] - k_normal)
+}
+df_labs[k_vars]
+```
+
+```{r}
 # Variable aggregation into final dataset
 
 df_final = data.frame(age=pull(df_raw, 'AD.Age'))
-df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1, 
+df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1,
                ifelse(df_raw$S7.FinalStatus==1, 0, 
                       df_raw$S7.FinalStatus))
 
 for (var in lab_vars) {
   vars12 <- paste0(paste0(var, '.D'), 1:2)
   v12 = paste0(short_names[var], '12')
-  df_final[v12] <- rowMeans(df_labs[vars12], na.rm = TRUE)
+  #df_final[v12] <- rowMeans(df_labs[vars12], na.rm = TRUE)
+  df_final[v12] <- rowMaxs(as.matrix(df_labs[,vars12]), na.rm = TRUE)
   
   vars34 <- paste0(paste0(var, '.D'), 3:4)
   v34 = paste0(short_names[var], '34')
-  df_final[v34] <- rowMeans(df_labs[vars34], na.rm = TRUE)
+  #df_final[v34] <- rowMeans(df_labs[vars34], na.rm = TRUE)
+  df_final[v34] <- rowMaxs(as.matrix(df_labs[,vars34]), na.rm = TRUE)
   
   vars56 <- paste0(paste0(var, '.D'), 5:6)
   v56 = paste0(short_names[var], '56')
-  df_final[v56] <- rowMeans(df_labs[vars56], na.rm = TRUE)
+  #df_final[v56] <- rowMeans(df_labs[vars56], na.rm = TRUE)
+  df_final[v56] <- rowMaxs(as.matrix(df_labs[,vars56]), na.rm = TRUE)
 }
 
+df_final <- df_final %>% replace_with_na_all(condition = ~.x == -Inf)
 df_final
 ```
 
