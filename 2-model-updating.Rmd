@@ -15,28 +15,26 @@ library(purrr)
 library(ROCit)
 ```
 
-This notebook updates the model applying recalibration, and then adding one more predictor
+This notebook updates iteratively updates the base prognostic model applying recalibration, by adding additional lab variables in blocks of 2 days
 
 ```{r message=FALSE, cache=F}
 source('./mdl-evaluation.R')
 source('./mdl-selection.R')
 
-num_imp <-100   # Number of multiple imputations
-num_boot <- 200  # Number of bootstrap samples
+num_imp <-100       # Number of multiple imputations
+num_boot <- 200     # Number of bootstrap samples
 random_seed <- 151  # Setting random seed for reproducibility
+
+min_age <- 15       #  Minimum age for inclusion in analysis
 ```
 
 TODO:
 
-* Remove children (<= 18)
-data_adults <- data %>% filter(age >= 15 & age < 18)
-v <- c('bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
-
 Comparing imputation vs complete case models
 * Use data from prev day to train next
-
-data_adults[v]
 * K is bimodal - transform
+
+
 Colinear groups:
   * BUN and CRE
   * ALT/AST 
@@ -49,11 +47,13 @@ Colinear groups:
 # Load the data, remove children, and transform Ct values into Z-scores
 
 data <- read.csv('data.csv')
-data <- data %>% filter(age >= 15)
+data <- data %>% filter(age >= min_age)
 
 data$ct12 <- (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
 data$ct34 <- (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
 data$ct56 <- (data$ct56 - mean(data$ct56, na.rm=T))/sd(data$ct56, na.rm=T)
+
+data
 ```
 
 ```{r}
