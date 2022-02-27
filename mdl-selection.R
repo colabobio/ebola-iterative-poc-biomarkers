@@ -61,12 +61,12 @@ selectVariables <- function(rseed, nimp, fimp, train_data, inc_ct) {
   # Sorting the counts https://stackoverflow.com/a/30651395
   counts <- counts[order(unlist(counts), decreasing=TRUE)]
   
-  # And print out...
+  # And store in output lists...
   res_names <- c()
   res_counts <- c()    
   for (k in names(counts)) {    
     n <- counts[[k]]
-    cat(k, counts[[k]], '\n')
+    #cat(k, counts[[k]], '\n')
     res_names <- c(res_names, k)
     res_counts <- c(res_counts, n)
   }  

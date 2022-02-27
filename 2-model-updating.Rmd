@@ -30,12 +30,13 @@ min_age <- 15       #  Minimum age for inclusion in analysis
 
 TODO:
 
-Comparing imputation vs complete case models
+* Automatize var selection with threshold per day group
 * Use data from prev day to train next
+
 * Take max of all variables but K
 * K is bimodal - transform into monotonic
-* Automatize var selection with threshold per day group
 
+* Comparing imputation vs complete case models
 * Look into colinear groups:
   - BUN and CRE
   - ALT/AST 
@@ -109,30 +110,42 @@ UPDATED MODEL FOR DAYS 1-2
 ```{r}
 # Apply the Elastic Net variable selecion method on all the lab variables available for days 1-2
 
-sat_imp_formula12 <- '~out+lp0+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12'
+sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
 
-vars12 <- c('out', 'lp0', 'bun12', 'alt12', 'ast12', 'ck12', 'alb12', 'k12', 'cre12', 'crp12')
+vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12')
 data12 <- data[vars12]
 
-sel12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
+sout12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
 
-seldf12 <- data.frame(unlist(sel12$names), unlist(sel12$counts))
-names(seldf12) <- c("Variable", "Freq")
-seldf12
+varf12 <- data.frame(unlist(sout12$names), unlist(sout12$counts))
+names(varf12) <- c("Variable", "Freq")
+varf12 <- varf12 %>% filter(Variable != "lp0" & Variable != "(Intercept)")
+varf12
+```
+
+```{r}
+# Apply threshold
+day12_sel_thres <- 0.8
+sel12 <- varf12 %>% filter(Freq > day12_sel_thres)
+sel12
 ```
 
 ```{r}
 # Train the model for days 1-2 on the selected variables
+mdl_vars12 <- append(sel12$Variable, 'lp0')
+mdl_vars12
 
-mdl_vars12 <- c('lp0', 'alt12', 'ast12', 'ck12', 'bun12', 'k12')
-
-mdl_imp_formula12 <- "~out+lp0+bun12+alt12+ast12+ck12+alb12+k12+cre12+crp12"
-mdl_lgr_formula12 <- "out~lp0+bun12+alt12+ast12+ck12+k12"
+mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
+mdl_lgr_formula12 <- paste('out', paste(mdl_vars12, collapse=" + "), sep=" ~ ")
+mdl_lgr_formula12
 
 mdl_folder12 <- "model-days12"
 dir.create(mdl_folder12)
 
 model12 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula12, mdl_lgr_formula12, data, mdl_vars12, mdl_folder12)
+
+# Add the logit contribution from the model for days 1-2 to the dataframe
+data['lp12'] <- predict(model12, data)
 ```
 
 ```{r}
@@ -152,43 +165,47 @@ cal_plot(model12, plot_data12, "original", "prob", model_label = '', dir = mdl_f
 roc_plot(plot_data12$out, plot_data12$prob, dir = mdl_folder12, fn = "roc_plot.pdf")
 ```
 
-
-```{r}
-# Add the logit contribution from the model for days 1-2 to the dataframe
-
-lp12 <- predict(model12, data)
-data['lp12'] <- lp12
-```
-
 UPDATED MODEL FOR DAYS 3-4
 
 ```{r}
 # Apply the Elastic Net variable selecion method on all the lab variables available for days 3-4
 
-sat_imp_formula34 <- '~out+lp12+bun34+alt34+ast34+ck34+alb34+k34+cre34+crp34'
+sat_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
 
-vars34 <- c('out', 'lp12', 'bun34', 'alt34', 'ast34', 'ck34', 'alb34', 'k34', 'cre34', 'crp34')
-data34 <- data[vars34]
+vars34 <- c('out', 'lp12', 'alb34', 'alt34', 'ast34', 'bun34', 'ck34', 'cre34', 'crp34', 'k34')
+data34 <- data[complete.cases(data[, c('lp12')]),]
 
-sel34 <- selectVariables(random_seed, num_imp, sat_imp_formula34, data34, TRUE)
+sout34 <- selectVariables(random_seed, num_imp, sat_imp_formula34, data34, TRUE)
 
-seldf34 <- data.frame(unlist(sel34$names), unlist(sel34$counts))
-names(seldf34) <- c("Variable", "Freq")
-seldf34
+varf34 <- data.frame(unlist(sout34$names), unlist(sout34$counts))
+names(varf34) <- c("Variable", "Freq")
+varf34 <- varf34 %>% filter(Variable != "lp12" & Variable != "(Intercept)")
+varf34
+```
+
+```{r}
+# Apply threshold
+day34_sel_thres <- 0.75
+sel34 <- varf34 %>% filter(Freq > day34_sel_thres)
+sel34
 ```
 
 ```{r}
 # Train the model for days 3-4 on the selected variables
+mdl_vars34 <- append(sel34$Variable, 'lp12')
+mdl_vars34
 
-mdl_vars34 <- c('lp12', 'alt34', 'ast34', 'ck34', 'cre34', 'k34')
-
-mdl_imp_formula34 <- "~out+lp12+bun34+alt34+ast34+ck34+alb34+k34+cre34+crp34"
-mdl_lgr_formula34 <- "out~lp12+alt34+ast34+ck34+cre34+k34"
+mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
+mdl_lgr_formula34 <- paste('out', paste(mdl_vars34, collapse=" + "), sep=" ~ ")
+mdl_lgr_formula34
 
 mdl_folder34 <- "model-days34"
 dir.create(mdl_folder34)
 
 model34 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula34, mdl_lgr_formula34, data, mdl_vars34, mdl_folder34)
+
+# Add the logit contribution from the model for days 3-4 to the dataframe
+data['lp34'] <- predict(model34, data)
 ```
 
 ```{r}
@@ -208,42 +225,47 @@ cal_plot(model34, plot_data34, "original", "prob", model_label = '', dir = mdl_f
 roc_plot(plot_data34$out, plot_data34$prob, dir = mdl_folder34, fn = "roc_plot.pdf")
 ```
 
-```{r}
-# Add the logit contribution from the model for days 1-2 to the dataframe
-
-lp34 <- predict(model34, data)
-data['lp34'] <- lp34
-```
-
 UPDATED MODEL FOR DAYS 5-6
 
 ```{r}
 # Apply the Elastic Net variable selecion method on all the lab variables available for days 5-6
 
-sat_imp_formula56 <- '~out+lp34+bun56+alt56+ast56+ck56+alb56+k56+cre56+crp56'
+sat_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
 
-vars56 <- c('out', 'lp34', 'bun56', 'alt56', 'ast56', 'ck56', 'alb56', 'k56', 'cre56', 'crp56')
-data56 <- data[vars56]
+vars56 <- c('out', 'lp34', 'alb56', 'alt56', 'ast56', 'bun56', 'ck56', 'cre56', 'crp56', 'k56')
+data56 <- data[complete.cases(data[, c('lp34')]),]
 
-sel56 <- selectVariables(random_seed, num_imp, sat_imp_formula56, data56, TRUE)
+sout56 <- selectVariables(random_seed, num_imp, sat_imp_formula56, data56, TRUE)
 
-seldf56 <- data.frame(unlist(sel56$names), unlist(sel56$counts))
-names(seldf56) <- c("Variable", "Freq")
-seldf56
+varf56 <- data.frame(unlist(sout56$names), unlist(sout56$counts))
+names(varf56) <- c("Variable", "Freq")
+varf56 <- varf56 %>% filter(Variable != "lp34" & Variable != "(Intercept)")
+varf56
+```
+
+```{r}
+# Apply threshold
+day56_sel_thres <- 0.6
+sel56 <- varf56 %>% filter(Freq > day56_sel_thres)
+sel56
 ```
 
 ```{r}
 # Train the model for days 5-6 on the selected variables
+mdl_vars56 <- append(sel56$Variable, 'lp34')
+mdl_vars56
 
-mdl_vars56 <- c('lp34', 'bun56', 'ast56')
-
-mdl_imp_formula56 <- "~out+lp34+bun56+alt56+ast56+ck56+alb56+k56+cre56+crp56"
-mdl_lgr_formula56 <- "out~lp34+ast56+bun56"
+mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
+mdl_lgr_formula56 <- paste('out', paste(mdl_vars56, collapse=" + "), sep=" ~ ")
+mdl_lgr_formula56
 
 mdl_folder56 <- "model-days56"
 dir.create(mdl_folder56)
 
 model56 <- generateModel(random_seed, num_imp, num_boot, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
+
+# Add the logit contribution from the model for days 3-4 to the dataframe
+data['lp56'] <- predict(model56, data)
 ```
 
 ```{r}
