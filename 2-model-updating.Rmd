@@ -127,7 +127,8 @@ sel12
 
 ```{r}
 # Train the model for days 1-2 on the selected variables
-mdl_vars12 <- append(sel12$Variable, 'lp0')
+#mdl_vars12 <- append(sel12$Variable, 'lp0')
+mdl_vars12 <- c('ck12', 'alt12', 'cre12', 'k12', 'lp0')
 mdl_vars12
 
 mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
@@ -190,7 +191,8 @@ sel34
 
 ```{r}
 # Train the model for days 3-4 on the selected variables
-mdl_vars34 <- append(sel34$Variable, 'lp12')
+#mdl_vars34 <- append(sel34$Variable, 'lp12')
+mdl_vars34 <- c('cre34', 'k34', 'lp12')
 mdl_vars34
 
 mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
@@ -265,7 +267,7 @@ dir.create(mdl_folder56)
 
 # setting number of knots to zero based on this discussion:
 # https://stats.stackexchange.com/questions/117383/impute-missing-values-using-aregimpute
-model56 <- generateModel(random_seed, num_imp, num_boot, 0, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
+model56 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
 
 # Add the logit contribution from the model for days 3-4 to the dataframe
 data['lp56'] <- predict(model56, data)
