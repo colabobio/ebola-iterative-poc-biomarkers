@@ -17,18 +17,13 @@ library(ROCit)
 
 This notebook updates iteratively updates the base prognostic model applying recalibration, by adding additional lab variables in blocks of 2 days
 
-TODO:
-* Directionakity of ALB is wrong, lower is worse
-* Check what's going on with Ct
-* Check N for the complete case analysis (ROC)
-
 Keep in mind that some lab results are co-linear:
 * BUN/CRE
 * ALT/AST 
 * AST/CK/K
 
 Some ideas to consider further:
-* Use different day blocks
+* Use different day blocks (e.g.: 1-2, 3-6)
 * Explore other selection of lab predictors (for example, bun insteaf of cre in days 3-4)
 * If Elastic Net variable selection is applied on data w/out missing data, 
   generate frames by censoring a given percentage of data (e.g.: 10%) and apply MI
@@ -41,7 +36,7 @@ num_imp <-100       # Number of multiple imputations
 num_boot <- 200     # Number of bootstrap samples
 random_seed <- 151  # Setting random seed for reproducibility
 
-min_age <- 15       #  Minimum age for inclusion in analysis
+min_age <- 18       #  Minimum age for inclusion in analysis
 ```
 
 ```{r}
@@ -135,7 +130,7 @@ sel12
 ```{r}
 # Train the model for days 1-2 on the selected variables
 #mdl_vars12 <- append(sel12$Variable, 'lp0')
-mdl_vars12 <- c('ck12', 'alt12', 'cre12', 'k12', 'lp0')
+mdl_vars12 <- c('ck12', 'alt12', 'bun12', 'k12', 'alb12', 'lp0')
 mdl_vars12
 
 mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
@@ -157,6 +152,7 @@ data['lp12'] <- predict(model12, data)
 vars <- append(mdl_vars12, 'out')
 df <- data %>% select(all_of(vars))
 full_data12 <- df[complete.cases(df),]
+full_data12
 
 pred12 <- predict(model12, full_data12) # prediction in log-odds (probabilities on logit scale)
 probs12 <- 1 / (1 + exp(-pred12))  # prediction as probability response
@@ -199,7 +195,7 @@ sel34
 ```{r}
 # Train the model for days 3-4 on the selected variables
 #mdl_vars34 <- append(sel34$Variable, 'lp12')
-mdl_vars34 <- c('cre34', 'k34', 'lp12')
+mdl_vars34 <- c('cre34', 'alb34', 'k34', 'lp12')
 mdl_vars34
 
 mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
@@ -221,6 +217,7 @@ data['lp34'] <- predict(model34, data)
 vars <- append(mdl_vars34, 'out')
 df <- data %>% select(all_of(vars))
 full_data34 <- df[complete.cases(df),]
+full_data34
 
 pred34 <- predict(model34, full_data34) # prediction in log-odds (probabilities on logit scale)
 probs34 <- 1 / (1 + exp(-pred34))  # prediction as probability response
@@ -287,6 +284,7 @@ data['lp56'] <- predict(model56, data)
 vars <- append(mdl_vars56, 'out')
 df <- data %>% select(all_of(vars))
 full_data56 <- df[complete.cases(df),]
+full_data56
 
 pred56 <- predict(model56, full_data56) # prediction in log-odds (probabilities on logit scale)
 probs56 <- 1 / (1 + exp(-pred56))  # prediction as probability response

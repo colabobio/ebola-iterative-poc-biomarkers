@@ -47,6 +47,17 @@ df_labs[k_vars]
 ```
 
 ```{r}
+# Transform ALB so it's inverted
+
+alb_vars <- c('Lab.AmLyteALB.D1', 'Lab.AmLyteALB.D2', 'Lab.AmLyteALB.D3', 'Lab.AmLyteALB.D4', 'Lab.AmLyteALB.D5', 'Lab.AmLyteALB.D6')
+
+for (var in alb_vars) {
+    df_labs[var] <- 1 / df_labs[var]
+}
+df_labs[alb_vars]
+```
+
+```{r}
 # Variable aggregation into final dataset
 
 df_final = data.frame(age=pull(df_raw, 'AD.Age'))
@@ -61,23 +72,39 @@ df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1,
 df_final$days <- as.Date(df_raw[['AD.DischargeDate']], format = "%d-%B-%y") - as.Date(df_raw[['AD.Date']], format = "%d-%B-%y")
 
 for (var in lab_vars) {
+  take_min <- (var == "Lab.CtNP")
+  
   vars12 <- paste0(paste0(var, '.D'), 1:2)
   v12 = paste0(short_names[var], '12')
   #df_final[v12] <- rowMeans(df_labs[vars12], na.rm = TRUE)
-  df_final[v12] <- rowMaxs(as.matrix(df_labs[,vars12]), na.rm = TRUE)
+  if (take_min) {
+      df_final[v12] <- rowMins(as.matrix(df_labs[,vars12]), na.rm = TRUE)
+  } else {
+      df_final[v12] <- rowMaxs(as.matrix(df_labs[,vars12]), na.rm = TRUE)  
+  }
   
   vars34 <- paste0(paste0(var, '.D'), 3:4)
   v34 = paste0(short_names[var], '34')
   #df_final[v34] <- rowMeans(df_labs[vars34], na.rm = TRUE)
-  df_final[v34] <- rowMaxs(as.matrix(df_labs[,vars34]), na.rm = TRUE)
+  if (take_min) {
+    df_final[v34] <- rowMins(as.matrix(df_labs[,vars34]), na.rm = TRUE)
+  } else {
+    df_final[v34] <- rowMaxs(as.matrix(df_labs[,vars34]), na.rm = TRUE)
+  }
   
   vars56 <- paste0(paste0(var, '.D'), 5:6)
   v56 = paste0(short_names[var], '56')
   #df_final[v56] <- rowMeans(df_labs[vars56], na.rm = TRUE)
-  df_final[v56] <- rowMaxs(as.matrix(df_labs[,vars56]), na.rm = TRUE)
+  if (take_min) {
+    df_final[v56] <- rowMins(as.matrix(df_labs[,vars56]), na.rm = TRUE)
+  } else {
+    df_final[v56] <- rowMaxs(as.matrix(df_labs[,vars56]), na.rm = TRUE)
+  }
+  
 }
 
 df_final <- df_final %>% replace_with_na_all(condition = ~.x == -Inf)
+df_final <- df_final %>% replace_with_na_all(condition = ~.x == Inf)
 df_final
 ```
 
