@@ -38,10 +38,11 @@ TODO:
 * Comparing imputation vs complete case models
 
 ```{r}
-# Load the data, remove children, and transform Ct values into Z-scores
+# Load the data, remove children, remove patients with less than 1 day of stay, and transform Ct values into Z-scores
 
 data <- read.csv('data.csv')
 data <- data %>% filter(age >= min_age)
+data <- data %>% filter(days > 0)
 
 data$ct12 <- (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
 data$ct34 <- (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
@@ -106,6 +107,7 @@ sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 
 
 vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12')
 data12 <- data[vars12]
+data12
 
 sout12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
 
@@ -117,7 +119,7 @@ varf12
 
 ```{r}
 # Apply threshold
-day12_sel_thres <- 0.75
+day12_sel_thres <- 0.5
 sel12 <- varf12 %>% filter(Freq > day12_sel_thres)
 sel12
 ```
@@ -166,6 +168,8 @@ sat_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34
 
 vars34 <- c('out', 'lp12', 'alb34', 'alt34', 'ast34', 'bun34', 'ck34', 'cre34', 'crp34', 'k34')
 data34 <- data[complete.cases(data[, c('lp12')]),]
+data34 <- data34 %>% filter(days > 2)
+data34
 
 sout34 <- selectVariables(random_seed, num_imp, sat_imp_formula34, data34, TRUE)
 
@@ -177,7 +181,7 @@ varf34
 
 ```{r}
 # Apply threshold
-day34_sel_thres <- 0.75
+day34_sel_thres <- 0.5
 sel34 <- varf34 %>% filter(Freq > day34_sel_thres)
 sel34
 ```
@@ -226,6 +230,8 @@ sat_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56
 
 vars56 <- c('out', 'lp34', 'alb56', 'alt56', 'ast56', 'bun56', 'ck56', 'cre56', 'crp56', 'k56')
 data56 <- data[complete.cases(data[, c('lp34')]),]
+data56 <- data56 %>% filter(days > 4)
+data56
 
 sout56 <- selectVariables(random_seed, num_imp, sat_imp_formula56, data56, TRUE)
 
@@ -237,7 +243,7 @@ varf56
 
 ```{r}
 # Apply threshold
-day56_sel_thres <- 0.6
+day56_sel_thres <- 0.5
 sel56 <- varf56 %>% filter(Freq > day56_sel_thres)
 sel56
 ```

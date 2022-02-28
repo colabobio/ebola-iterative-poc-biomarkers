@@ -54,6 +54,12 @@ df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1,
                ifelse(df_raw$S7.FinalStatus==1, 0, 
                       df_raw$S7.FinalStatus))
 
+# Calculating days of hospitalization
+#df_final$date_admission <-strptime(df_raw[['AD.Date']], format = "%d-%B-%y")
+#df_final$date_discharge <-strptime(df_raw[['AD.DischargeDate']], format = "%d-%B-%y")
+#df_final$days <- (df_final$date_discharge - df_final$date_admission) / (3600 * 24)
+df_final$days <- as.Date(df_raw[['AD.DischargeDate']], format = "%d-%B-%y") - as.Date(df_raw[['AD.Date']], format = "%d-%B-%y")
+
 for (var in lab_vars) {
   vars12 <- paste0(paste0(var, '.D'), 1:2)
   v12 = paste0(short_names[var], '12')
