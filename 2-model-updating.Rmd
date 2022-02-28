@@ -17,6 +17,16 @@ library(ROCit)
 
 This notebook updates iteratively updates the base prognostic model applying recalibration, by adding additional lab variables in blocks of 2 days
 
+Keep in mind that some lab results are co-linear:
+* BUN/CRE
+* ALT/AST 
+* AST/CK/K
+
+Some ideas to consider further:
+* Use different day blocks
+* If Elastic Net variable selection is applied on data w/out missing data, 
+  generate frames by censoring a given percentage of data (e.g.: 10%) and apply MI
+
 ```{r message=FALSE, cache=F}
 source('./mdl-evaluation.R')
 source('./mdl-selection.R')
@@ -27,15 +37,6 @@ random_seed <- 151  # Setting random seed for reproducibility
 
 min_age <- 15       #  Minimum age for inclusion in analysis
 ```
-
-TODO:
-* Look into colinear groups:
-  - BUN/CRE
-  - ALT/AST 
-  - AST/CK/K
-  - https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
-  - https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
-* Comparing imputation vs complete case models
 
 ```{r}
 # Load the data, remove children, remove patients with less than 1 day of stay, and transform Ct values into Z-scores
@@ -267,7 +268,7 @@ dir.create(mdl_folder56)
 
 # setting number of knots to zero based on this discussion:
 # https://stats.stackexchange.com/questions/117383/impute-missing-values-using-aregimpute
-model56 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
+model56 <- generateModel(random_seed, num_imp, num_boot, 0, mdl_imp_formula56, mdl_lgr_formula56, data, mdl_vars56, mdl_folder56)
 
 # Add the logit contribution from the model for days 3-4 to the dataframe
 data['lp56'] <- predict(model56, data)
