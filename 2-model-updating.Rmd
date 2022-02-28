@@ -24,6 +24,7 @@ Keep in mind that some lab results are co-linear:
 
 Some ideas to consider further:
 * Use different day blocks
+* Explore other selection of lab predictors (for example, bun insteaf of cre in days 3-4)
 * If Elastic Net variable selection is applied on data w/out missing data, 
   generate frames by censoring a given percentage of data (e.g.: 10%) and apply MI
 
