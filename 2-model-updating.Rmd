@@ -17,6 +17,11 @@ library(ROCit)
 
 This notebook updates iteratively updates the base prognostic model applying recalibration, by adding additional lab variables in blocks of 2 days
 
+TODO:
+* Directionakity of ALB is wrong, lower is worse
+* Check what's going on with Ct
+* Check N for the complete case analysis (ROC)
+
 Keep in mind that some lab results are co-linear:
 * BUN/CRE
 * ALT/AST 
