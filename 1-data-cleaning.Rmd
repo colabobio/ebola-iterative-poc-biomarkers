@@ -18,6 +18,23 @@ df_raw <- read.csv('./DRC_EbolaPos_Database_2018Outbreak_Coded_2021_08_13-numeri
 ```
 
 ```{r}
+df_raw[["AD.Date.c"]] <- strptime(df_raw[["AD.Date"]], format = "%d-%b-%y")
+
+df_raw[["Lab.SampleDate.D1.c"]] <- strptime(df_raw[["Lab.SampleDate.D1"]], format = "%d-%b-%y")
+df_raw[["Lab.SampleDate.D2.c"]] <- strptime(df_raw[["Lab.SampleDate.D2"]], format = "%d-%b-%y")
+
+
+df_raw[["Lab.SampleDate.D1.diff"]] <- round(difftime(df_raw[["Lab.SampleDate.D1.c"]], df_raw[["AD.Date.c"]], units = "days"))
+df_raw[["Lab.SampleDate.D2.diff"]] <- round(difftime(df_raw[["Lab.SampleDate.D2.c"]], df_raw[["AD.Date.c"]], units = "days"))
+
+df_raw[["Lab.SampleDate.D1.diff"]]
+df_raw[["Lab.SampleDate.D2.diff"]]
+
+
+```
+
+
+```{r}
 test_days <- c('.D1', '.D2', '.D3', '.D4', '.D5', '.D6')
 lab_vars <- c('Lab.CtNP', 'Lab.AmLyteBUN', 'Lab.AmLyteALT', 'Lab.AmLyteAST', 'Lab.AmLyteCK', 'Lab.AmLyteALB', 'Lab.AmLyteK', 'Lab.AmLyteCRE', 'Lab.AmLyteCRP')
 short_names <- c('Lab.CtNP'='ct', 'Lab.AmLyteBUN'='bun', 'Lab.AmLyteALT'='alt', 'Lab.AmLyteAST'='ast', 'Lab.AmLyteCK'='ck', 'Lab.AmLyteALB'='alb', 'Lab.AmLyteK'='k', 'Lab.AmLyteCRE'='cre', 'Lab.AmLyteCRP'='crp')

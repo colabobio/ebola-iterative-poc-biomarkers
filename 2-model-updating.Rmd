@@ -22,6 +22,9 @@ Keep in mind that some lab results are co-linear:
 * ALT/AST 
 * AST/CK/K
 
+Elastic net encourages a grouping effect, where strongly correlated predictors tend to be in or out of the model together
+https://hastie.su.domains/Papers/B67.2%20(2005)%20301-320%20Zou%20&%20Hastie.pdf
+
 Some ideas to consider further:
 * Use different day blocks (e.g.: 1-2, 3-6)
 * Explore other selection of lab predictors (for example, bun insteaf of cre in days 3-4)
@@ -111,6 +114,11 @@ sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 
 vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12')
 data12 <- data[vars12]
 data12
+
+#cov12 <- cov(data12)
+#cov12 <- cor(na.omit(data12))
+cov12 <- cor(data12 ,use='pairwise')
+cov12
 
 sout12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
 
