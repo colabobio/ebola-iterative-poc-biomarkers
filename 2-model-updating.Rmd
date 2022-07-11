@@ -25,7 +25,7 @@ num_imp <-100       # Number of multiple imputations
 num_boot <- 200     # Number of bootstrap samples
 random_seed <- 151  # Setting random seed for reproducibility
 
-min_age <- 15       #  Minimum age for inclusion in analysis
+min_age <- 18       #  Minimum age for inclusion in analysis
 ```
 
 TODO:
