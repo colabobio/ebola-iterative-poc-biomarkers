@@ -28,20 +28,12 @@ random_seed <- 151  # Setting random seed for reproducibility
 min_age <- 18       #  Minimum age for inclusion in analysis
 ```
 
-TODO:
-* Look into colinear groups:
-  - BUN/CRE
-  - ALT/AST 
-  - AST/CK/K
-  - https://medium.com/analytics-vidhya/multicollinearity-ridge-lasso-elastic-net-regression-using-r-6582cbabf7f3
-  - https://www.lexjansen.com/wuss/2018/131_Final_Paper_PDF.pdf
-* Comparing imputation vs complete case models
-
 ```{r}
 # Load the data, remove children, and transform Ct values into Z-scores
 
 data <- read.csv('data.csv')
 data <- data %>% filter(age >= min_age)
+data <- data %>% filter(days > 0)
 
 data$ct123 <- (data$ct123 - mean(data$ct123, na.rm=T))/sd(data$ct123, na.rm=T)
 data$ct456 <- (data$ct456 - mean(data$ct456, na.rm=T))/sd(data$ct456, na.rm=T)
@@ -104,7 +96,9 @@ UPDATED MODEL FOR DAYS 1-2-3
 sat_imp_formula123 <- "~out + lp0 + alb123 + alt123 + ast123 + bun123 + ck123 + cre123 + crp123 + k123"
 
 vars123 <- c('out', 'lp0', 'alb123', 'alt123', 'ast123', 'bun123', 'ck123', 'cre123', 'crp123', 'k123')
-data123 <- data[vars123]
+data123 <- data[complete.cases(data[, c('lp0')]),]
+data123 <- data123 %>% filter(days > 0)
+data123
 
 sout123 <- selectVariables(random_seed, num_imp, sat_imp_formula123, data123, TRUE)
 
@@ -122,8 +116,14 @@ sel123
 ```
 
 ```{r}
+cov123 <- cor(data123[,sel123$Variable], use='pairwise') > 0.75
+cov123
+```
+
+```{r}
 # Train the model for days 1-2-3 on the selected variables
 mdl_vars123 <- append(sel123$Variable, 'lp0')
+# mdl_vars123 <- mdl_vars123[! mdl_vars123 %in% c()] # Remove highly correlated variables
 mdl_vars123
 
 mdl_imp_formula123 <- "~out + lp0 + alb123 + alt123 + ast123 + bun123 + ck123 + cre123 + crp123 + k123"
@@ -144,13 +144,14 @@ data['lp123'] <- predict(model123, data)
 
 vars <- append(mdl_vars123, 'out')
 df <- data %>% select(all_of(vars))
-data123 <- df[complete.cases(df),]
+full_data123 <- df[complete.cases(df),]
+full_data123
 
-pred123 <- predict(model123, data123) # prediction in log-odds (probabilities on logit scale)
+pred123 <- predict(model123, full_data123) # prediction in log-odds (probabilities on logit scale)
 probs123 <- 1 / (1 + exp(-pred123))  # prediction as probability response
 
 # Generate the data frame with the data needed for the calibration and ROC plots
-plot_data123 <- data.frame(out = data123$out, logodds = pred123, prob = probs123)
+plot_data123 <- data.frame(out = full_data123$out, logodds = pred123, prob = probs123)
 
 cal_plot(model123, plot_data123, "original", "prob", model_label = '', dir = mdl_folder123, fn = "cal_plot.pdf")
 roc_plot(plot_data123$out, plot_data123$prob, dir = mdl_folder123, fn = "roc_plot.pdf")
@@ -165,6 +166,8 @@ sat_imp_formula456 <- "~out + lp123 + alb456 + alt456 + ast456 + bun456 + ck456 
 
 vars456 <- c('out', 'lp123', 'alb456', 'alt456', 'ast456', 'bun456', 'ck456', 'cre456', 'crp456', 'k456')
 data456 <- data[complete.cases(data[, c('lp123')]),]
+data456 <- data456 %>% filter(days > 3)
+data456
 
 sout456 <- selectVariables(random_seed, num_imp, sat_imp_formula456, data456, TRUE)
 
@@ -182,8 +185,14 @@ sel456
 ```
 
 ```{r}
+cov456 <- cor(data456[,sel456$Variable], use='pairwise') > 0.75
+cov456
+```
+
+```{r}
 # Train the model for days 4-5-6 on the selected variables
 mdl_vars456 <- append(sel456$Variable, 'lp123')
+mdl_vars456 <- mdl_vars456[! mdl_vars456 %in% c('bun456')] # Remove highly correlated variables
 mdl_vars456
 
 mdl_imp_formula456 <- "~out + lp123 + alb456 + alt456 + ast456 + bun456 + ck456 + cre456 + crp456 + k456"
@@ -204,13 +213,14 @@ data['lp456'] <- predict(model456, data)
 
 vars <- append(mdl_vars456, 'out')
 df <- data %>% select(all_of(vars))
-data456 <- df[complete.cases(df),]
+full_data456 <- df[complete.cases(df),]
+full_data456
 
-pred456 <- predict(model456, data456) # prediction in log-odds (probabilities on logit scale)
+pred456 <- predict(model456, full_data456) # prediction in log-odds (probabilities on logit scale)
 probs456 <- 1 / (1 + exp(-pred456))  # prediction as probability response
 
 # Generate the data frame with the data needed for the calibration and ROC plots
-plot_data456 <- data.frame(out = data456$out, logodds = pred456, prob = probs456)
+plot_data456 <- data.frame(out = full_data456$out, logodds = pred456, prob = probs456)
 
 cal_plot(model456, plot_data456, "original", "prob", model_label = '', dir = mdl_folder456, fn = "cal_plot.pdf")
 roc_plot(plot_data456$out, plot_data456$prob, dir = mdl_folder456, fn = "roc_plot.pdf")

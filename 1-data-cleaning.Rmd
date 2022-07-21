@@ -1151,6 +1151,7 @@ df_final = data.frame(age=pull(df_raw, 'AD.Age'))
 df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1,
                ifelse(df_raw$S7.FinalStatus==1, 0, 
                       df_raw$S7.FinalStatus))
+df_final$days <- as.integer(dmy(df_raw$AD.DischargeDate) - dmy(df_raw$AD.Date))
 
 for (var in lab_vars) {
   take_min <- (var == "Lab.CtNP")
@@ -1206,6 +1207,7 @@ df_final <- df_final %>% replace_with_na_all(condition = ~.x == -Inf)
 df_final <- df_final %>% replace_with_na_all(condition = ~.x == Inf)
 df_final
 ```
+
 
 ```{r}
 write.csv(df_final, './data.csv', row.names = F)

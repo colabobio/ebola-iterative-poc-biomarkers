@@ -26,8 +26,6 @@ Elastic net encourages a grouping effect, where strongly correlated predictors t
 https://hastie.su.domains/Papers/B67.2%20(2005)%20301-320%20Zou%20&%20Hastie.pdf
 
 Some ideas to consider further:
-* Use different day blocks (e.g.: 1-2, 3-6)
-* Explore other selection of lab predictors (for example, bun insteaf of cre in days 3-4)
 * If Elastic Net variable selection is applied on data w/out missing data, 
   generate frames by censoring a given percentage of data (e.g.: 10%) and apply MI
 
@@ -112,13 +110,9 @@ UPDATED MODEL FOR DAYS 1-2
 sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
 
 vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12')
-data12 <- data[vars12]
+data12 <- data[complete.cases(data[, c('lp0')]),]
+data12 <- data12 %>% filter(days > 0)
 data12
-
-#cov12 <- cov(data12)
-#cov12 <- cor(na.omit(data12))
-cov12 <- cor(data12 ,use='pairwise')
-cov12
 
 sout12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
 
@@ -136,9 +130,14 @@ sel12
 ```
 
 ```{r}
+cov12 <- cor(data12[,sel12$Variable], use='pairwise') > 0.75
+cov12
+```
+
+```{r}
 # Train the model for days 1-2 on the selected variables
-#mdl_vars12 <- append(sel12$Variable, 'lp0')
-mdl_vars12 <- c('ck12', 'alt12', 'bun12', 'k12', 'alb12', 'lp0')
+mdl_vars12 <- append(sel12$Variable, 'lp0')
+# mdl_vars12 <- mdl_vars12[! mdl_vars12 %in% c()] # Remove highly correlated variables
 mdl_vars12
 
 mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
@@ -201,9 +200,14 @@ sel34
 ```
 
 ```{r}
+cov34 <- cor(data34[,sel34$Variable], use='pairwise') > 0.75
+cov34
+```
+
+```{r}
 # Train the model for days 3-4 on the selected variables
-#mdl_vars34 <- append(sel34$Variable, 'lp12')
-mdl_vars34 <- c('cre34', 'alb34', 'k34', 'lp12')
+mdl_vars34 <- append(sel34$Variable, 'lp12')
+mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
 mdl_vars34
 
 mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
@@ -266,9 +270,14 @@ sel56
 ```
 
 ```{r}
+cov56 <- cor(data56[,sel56$Variable], use='pairwise') > 0.75
+cov56
+```
+
+```{r}
 # Train the model for days 5-6 on the selected variables
-#mdl_vars56 <- append(sel56$Variable, 'lp34')
-mdl_vars56 <- c('bun56', 'crp56', 'lp34')
+mdl_vars56 <- append(sel56$Variable, 'lp34')
+#mdl_vars56 <- mdl_vars56[! mdl_vars56 %in% c()] # Remove highly correlated variables
 mdl_vars56
 
 mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
