@@ -19,15 +19,16 @@ df_raw <- read.csv('./DRC_EbolaPos_Database_2018Outbreak_Coded_2021_08_13-numeri
 ```
 
 ```{r}
-test_days <- c('.D1', '.D2', '.D3', '.D4', '.D5', '.D6')
 lab_vars <- c('Lab.CtNP', 'Lab.AmLyteBUN', 'Lab.AmLyteALT', 'Lab.AmLyteAST', 'Lab.AmLyteCK', 'Lab.AmLyteALB', 'Lab.AmLyteK', 'Lab.AmLyteCRE', 'Lab.AmLyteCRP')
 short_names <- c('Lab.CtNP'='ct', 'Lab.AmLyteBUN'='bun', 'Lab.AmLyteALT'='alt', 'Lab.AmLyteAST'='ast', 'Lab.AmLyteCK'='ck', 'Lab.AmLyteALB'='alb', 'Lab.AmLyteK'='k', 'Lab.AmLyteCRE'='cre', 'Lab.AmLyteCRP'='crp')
 ```
 
 ```{r}
 # Variable selection
-df_1to6 <- df_raw %>% select(ends_with(test_days))
-df_labs <- df_1to6 %>% select(starts_with(lab_vars))
+test_days <- c('.D1', '.D2', '.D3', '.D4', '.D5', '.D6', '.D7')
+
+df_1to7 <- df_raw %>% select(ends_with(test_days))
+df_labs <- df_1to7 %>% select(starts_with(lab_vars))
 
 df_labs$AD.Date <- df_raw$AD.Date
 df_labs$Lab.SampleDate.D1 <- df_raw$Lab.SampleDate.D1
@@ -36,14 +37,14 @@ df_labs$Lab.SampleDate.D3 <- df_raw$Lab.SampleDate.D3
 df_labs$Lab.SampleDate.D4 <- df_raw$Lab.SampleDate.D4
 df_labs$Lab.SampleDate.D5 <- df_raw$Lab.SampleDate.D5
 df_labs$Lab.SampleDate.D6 <- df_raw$Lab.SampleDate.D6
-
-df_labs
+df_labs$Lab.SampleDate.D7 <- df_raw$Lab.SampleDate.D7
+# More than 7th sample is not needed, very few have data for the first 6 day of hospital stay (only 6 in 8th sample)
 ```
 
 ```{r}
 # Transform K so both extremes (low and high) map to high values
 
-k_vars <- c('Lab.AmLyteK.D1', 'Lab.AmLyteK.D2', 'Lab.AmLyteK.D3', 'Lab.AmLyteK.D4', 'Lab.AmLyteK.D5', 'Lab.AmLyteK.D6')
+k_vars <- c('Lab.AmLyteK.D1', 'Lab.AmLyteK.D2', 'Lab.AmLyteK.D3', 'Lab.AmLyteK.D4', 'Lab.AmLyteK.D5', 'Lab.AmLyteK.D6', 'Lab.AmLyteK.D7')
 
 # From https://www.mayoclinic.org/symptoms/hyperkalemia/basics/definition/sym-20050776
 k_normal = 4.4
@@ -57,6 +58,17 @@ df_labs[k_vars]
 ```
 
 ```{r}
+# Transform ALB so it's inverted
+
+alb_vars <- c('Lab.AmLyteALB.D1', 'Lab.AmLyteALB.D2', 'Lab.AmLyteALB.D3', 'Lab.AmLyteALB.D4', 'Lab.AmLyteALB.D5', 'Lab.AmLyteALB.D6', 'Lab.AmLyteALB.D7')
+
+for (var in alb_vars) {
+    df_labs[var] <- 1 / df_labs[var]
+}
+df_labs[alb_vars]
+```
+
+```{r}
 # Calculating difference between sample dates and admission dates to correctly assign lab results to number of days after admission
 
 df_labs$Lab.SampleDiff.D1 <- as.integer(dmy(df_labs$Lab.SampleDate.D1) - dmy(df_labs$AD.Date))
@@ -65,6 +77,7 @@ df_labs$Lab.SampleDiff.D3 <- as.integer(dmy(df_labs$Lab.SampleDate.D3) - dmy(df_
 df_labs$Lab.SampleDiff.D4 <- as.integer(dmy(df_labs$Lab.SampleDate.D4) - dmy(df_labs$AD.Date))
 df_labs$Lab.SampleDiff.D5 <- as.integer(dmy(df_labs$Lab.SampleDate.D5) - dmy(df_labs$AD.Date))
 df_labs$Lab.SampleDiff.D6 <- as.integer(dmy(df_labs$Lab.SampleDate.D6) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D7 <- as.integer(dmy(df_labs$Lab.SampleDate.D7) - dmy(df_labs$AD.Date))
 ```
 
 ```{r}
@@ -98,111 +111,128 @@ df_labs$Lab.SampleDiff.D6 <- as.integer(dmy(df_labs$Lab.SampleDate.D6) - dmy(df_
 
 ```
 
-
-```{r}
-# Use as very large, negative value to max calculations work (otherwise NA always gets picked by max)
-df_labs[is.na(df_labs)] <- -10000
-```
-
 ```{r}
 
 var <- "Lab.CtNP"
-df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F11 = ifelse(-1 <= Lab.SampleDiff.D1 & Lab.SampleDiff.D1 <= 1, Lab.CtNP.D1, -10000))
-df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F12 = ifelse(-1 <= Lab.SampleDiff.D2 & Lab.SampleDiff.D2 <= 1, Lab.CtNP.D2, -10000))
-df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F13 = ifelse(-1 <= Lab.SampleDiff.D3 & Lab.SampleDiff.D3 <= 1, Lab.CtNP.D3, -10000))
-df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F14 = ifelse(-1 <= Lab.SampleDiff.D4 & Lab.SampleDiff.D4 <= 1, Lab.CtNP.D4, -10000))
-df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.CtNP.D5, -10000))
-df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.CtNP.D6, -10000))
-df_labs$Lab.CtNP.F1 <- pmax(df_labs$Lab.CtNP.F11, df_labs$Lab.CtNP.F12, 
-                                 df_labs$Lab.CtNP.F13, df_labs$Lab.CtNP.F14,
-                                 df_labs$Lab.CtNP.F15, df_labs$Lab.CtNP.F16)
+
+# Use as very large, positive value for min calculations to work (otherwise NA always gets picked by max)
+df_labs[is.na(df_labs)] <- +10000
 
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.CtNP.D1, -10000))
+  mutate(Lab.CtNP.F11 = ifelse(-1 <= Lab.SampleDiff.D1 & Lab.SampleDiff.D1 <= 1, Lab.CtNP.D1, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F22 = ifelse(Lab.SampleDiff.D2 == 2, Lab.CtNP.D2, -10000))
+  mutate(Lab.CtNP.F12 = ifelse(-1 <= Lab.SampleDiff.D2 & Lab.SampleDiff.D2 <= 1, Lab.CtNP.D2, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F23 = ifelse(Lab.SampleDiff.D3 == 2, Lab.CtNP.D3, -10000))
+  mutate(Lab.CtNP.F13 = ifelse(-1 <= Lab.SampleDiff.D3 & Lab.SampleDiff.D3 <= 1, Lab.CtNP.D3, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F24 = ifelse(Lab.SampleDiff.D4 == 2, Lab.CtNP.D4, -10000))
+  mutate(Lab.CtNP.F14 = ifelse(-1 <= Lab.SampleDiff.D4 & Lab.SampleDiff.D4 <= 1, Lab.CtNP.D4, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.CtNP.D5, -10000))
+  mutate(Lab.CtNP.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.CtNP.D5, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.CtNP.D6, -10000))
-df_labs$Lab.CtNP.F2 <- pmax(df_labs$Lab.CtNP.F21, df_labs$Lab.CtNP.F22, 
-                                 df_labs$Lab.CtNP.F23, df_labs$Lab.CtNP.F24,
-                                 df_labs$Lab.CtNP.F25, df_labs$Lab.CtNP.F26)
+  mutate(Lab.CtNP.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.CtNP.D6, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.CtNP.D7, +10000))
+df_labs$Lab.CtNP.F1 <- pmin(df_labs$Lab.CtNP.F11, df_labs$Lab.CtNP.F12, 
+                            df_labs$Lab.CtNP.F13, df_labs$Lab.CtNP.F14,
+                            df_labs$Lab.CtNP.F15, df_labs$Lab.CtNP.F16, df_labs$Lab.CtNP.F17)
 
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.CtNP.D1, -10000))
+  mutate(Lab.CtNP.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.CtNP.D1, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F32 = ifelse(Lab.SampleDiff.D2 == 3, Lab.CtNP.D2, -10000))
+  mutate(Lab.CtNP.F22 = ifelse(Lab.SampleDiff.D2 == 2, Lab.CtNP.D2, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F33 = ifelse(Lab.SampleDiff.D3 == 3, Lab.CtNP.D3, -10000))
+  mutate(Lab.CtNP.F23 = ifelse(Lab.SampleDiff.D3 == 2, Lab.CtNP.D3, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F34 = ifelse(Lab.SampleDiff.D4 == 3, Lab.CtNP.D4, -10000))
+  mutate(Lab.CtNP.F24 = ifelse(Lab.SampleDiff.D4 == 2, Lab.CtNP.D4, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.CtNP.D5, -10000))
+  mutate(Lab.CtNP.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.CtNP.D5, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.CtNP.D6, -10000))
-df_labs$Lab.CtNP.F3 <- pmax(df_labs$Lab.CtNP.F31, df_labs$Lab.CtNP.F32, 
-                                 df_labs$Lab.CtNP.F33, df_labs$Lab.CtNP.F34,
-                                 df_labs$Lab.CtNP.F35, df_labs$Lab.CtNP.F36)
+  mutate(Lab.CtNP.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.CtNP.D6, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.CtNP.D7, +10000))
+df_labs$Lab.CtNP.F2 <- pmin(df_labs$Lab.CtNP.F21, df_labs$Lab.CtNP.F22, 
+                            df_labs$Lab.CtNP.F23, df_labs$Lab.CtNP.F24,
+                            df_labs$Lab.CtNP.F25, df_labs$Lab.CtNP.F26, df_labs$Lab.CtNP.F27)
 
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.CtNP.D1, -10000))
+  mutate(Lab.CtNP.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.CtNP.D1, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F42 = ifelse(Lab.SampleDiff.D2 == 4, Lab.CtNP.D2, -10000))
+  mutate(Lab.CtNP.F32 = ifelse(Lab.SampleDiff.D2 == 3, Lab.CtNP.D2, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F43 = ifelse(Lab.SampleDiff.D3 == 4, Lab.CtNP.D3, -10000))
+  mutate(Lab.CtNP.F33 = ifelse(Lab.SampleDiff.D3 == 3, Lab.CtNP.D3, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F44 = ifelse(Lab.SampleDiff.D4 == 4, Lab.CtNP.D4, -10000))
+  mutate(Lab.CtNP.F34 = ifelse(Lab.SampleDiff.D4 == 3, Lab.CtNP.D4, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.CtNP.D5, -10000))
+  mutate(Lab.CtNP.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.CtNP.D5, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.CtNP.D6, -10000))
-df_labs$Lab.CtNP.F4 <- pmax(df_labs$Lab.CtNP.F41, df_labs$Lab.CtNP.F42, 
-                                 df_labs$Lab.CtNP.F43, df_labs$Lab.CtNP.F44,
-                                 df_labs$Lab.CtNP.F45, df_labs$Lab.CtNP.F46)
+  mutate(Lab.CtNP.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.CtNP.D6, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.CtNP.D7, +10000))
+df_labs$Lab.CtNP.F3 <- pmin(df_labs$Lab.CtNP.F31, df_labs$Lab.CtNP.F32, 
+                            df_labs$Lab.CtNP.F33, df_labs$Lab.CtNP.F34,
+                            df_labs$Lab.CtNP.F35, df_labs$Lab.CtNP.F36, df_labs$Lab.CtNP.F37)
 
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.CtNP.D1, -10000))
+  mutate(Lab.CtNP.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.CtNP.D1, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F52 = ifelse(Lab.SampleDiff.D2 == 5, Lab.CtNP.D2, -10000))
+  mutate(Lab.CtNP.F42 = ifelse(Lab.SampleDiff.D2 == 4, Lab.CtNP.D2, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F53 = ifelse(Lab.SampleDiff.D3 == 5, Lab.CtNP.D3, -10000))
+  mutate(Lab.CtNP.F43 = ifelse(Lab.SampleDiff.D3 == 4, Lab.CtNP.D3, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F54 = ifelse(Lab.SampleDiff.D4 == 5, Lab.CtNP.D4, -10000))
+  mutate(Lab.CtNP.F44 = ifelse(Lab.SampleDiff.D4 == 4, Lab.CtNP.D4, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.CtNP.D5, -10000))
+  mutate(Lab.CtNP.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.CtNP.D5, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.CtNP.D6, -10000))
-df_labs$Lab.CtNP.F5 <- pmax(df_labs$Lab.CtNP.F51, df_labs$Lab.CtNP.F52, 
-                                 df_labs$Lab.CtNP.F53, df_labs$Lab.CtNP.F54,
-                                 df_labs$Lab.CtNP.F55, df_labs$Lab.CtNP.F56)
+  mutate(Lab.CtNP.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.CtNP.D6, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.CtNP.D7, +10000))
+df_labs$Lab.CtNP.F4 <- pmin(df_labs$Lab.CtNP.F41, df_labs$Lab.CtNP.F42, 
+                            df_labs$Lab.CtNP.F43, df_labs$Lab.CtNP.F44,
+                            df_labs$Lab.CtNP.F45, df_labs$Lab.CtNP.F46, df_labs$Lab.CtNP.F47)
 
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.CtNP.D1, -10000))
+  mutate(Lab.CtNP.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.CtNP.D1, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F62 = ifelse(Lab.SampleDiff.D2 == 6, Lab.CtNP.D2, -10000))
+  mutate(Lab.CtNP.F52 = ifelse(Lab.SampleDiff.D2 == 5, Lab.CtNP.D2, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F63 = ifelse(Lab.SampleDiff.D3 == 6, Lab.CtNP.D3, -10000))
+  mutate(Lab.CtNP.F53 = ifelse(Lab.SampleDiff.D3 == 5, Lab.CtNP.D3, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F64 = ifelse(Lab.SampleDiff.D4 == 6, Lab.CtNP.D4, -10000))
+  mutate(Lab.CtNP.F54 = ifelse(Lab.SampleDiff.D4 == 5, Lab.CtNP.D4, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.CtNP.D5, -10000))
+  mutate(Lab.CtNP.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.CtNP.D5, +10000))
 df_labs <- df_labs %>% 
-  mutate(Lab.CtNP.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.CtNP.D6, -10000))
-df_labs$Lab.CtNP.F6 <- pmax(df_labs$Lab.CtNP.F61, df_labs$Lab.CtNP.F62, 
-                                 df_labs$Lab.CtNP.F63, df_labs$Lab.CtNP.F64,
-                                 df_labs$Lab.CtNP.F65, df_labs$Lab.CtNP.F66)
+  mutate(Lab.CtNP.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.CtNP.D6, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.CtNP.D7, +10000))
+df_labs$Lab.CtNP.F5 <- pmin(df_labs$Lab.CtNP.F51, df_labs$Lab.CtNP.F52, 
+                            df_labs$Lab.CtNP.F53, df_labs$Lab.CtNP.F54,
+                            df_labs$Lab.CtNP.F55, df_labs$Lab.CtNP.F56, df_labs$Lab.CtNP.F57)
 
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.CtNP.D1, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F62 = ifelse(Lab.SampleDiff.D2 == 6, Lab.CtNP.D2, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F63 = ifelse(Lab.SampleDiff.D3 == 6, Lab.CtNP.D3, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F64 = ifelse(Lab.SampleDiff.D4 == 6, Lab.CtNP.D4, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.CtNP.D5, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.CtNP.D6, +10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.CtNP.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.CtNP.D7, +10000))
+df_labs$Lab.CtNP.F6 <- pmin(df_labs$Lab.CtNP.F61, df_labs$Lab.CtNP.F62, 
+                            df_labs$Lab.CtNP.F63, df_labs$Lab.CtNP.F64,
+                            df_labs$Lab.CtNP.F65, df_labs$Lab.CtNP.F66, df_labs$Lab.CtNP.F67)
+
+df_labs[df_labs == +10000] <- NA
+
+```
+
+```{r}
+# Use as very large, negative value for max calculations to work (otherwise NA always gets picked by max)
+df_labs[is.na(df_labs)] <- -10000
 ```
 
 ```{r}
@@ -220,9 +250,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteBUN.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteBUN.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteBUN.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteBUN.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteBUN.D7, -10000))
 df_labs$Lab.AmLyteBUN.F1 <- pmax(df_labs$Lab.AmLyteBUN.F11, df_labs$Lab.AmLyteBUN.F12, 
                                  df_labs$Lab.AmLyteBUN.F13, df_labs$Lab.AmLyteBUN.F14,
-                                 df_labs$Lab.AmLyteBUN.F15, df_labs$Lab.AmLyteBUN.F16)
+                                 df_labs$Lab.AmLyteBUN.F15, df_labs$Lab.AmLyteBUN.F16, df_labs$Lab.AmLyteBUN.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteBUN.D1, -10000))
@@ -236,9 +268,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteBUN.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteBUN.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteBUN.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteBUN.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteBUN.D7, -10000))
 df_labs$Lab.AmLyteBUN.F2 <- pmax(df_labs$Lab.AmLyteBUN.F21, df_labs$Lab.AmLyteBUN.F22, 
                                  df_labs$Lab.AmLyteBUN.F23, df_labs$Lab.AmLyteBUN.F24,
-                                 df_labs$Lab.AmLyteBUN.F25, df_labs$Lab.AmLyteBUN.F26)
+                                 df_labs$Lab.AmLyteBUN.F25, df_labs$Lab.AmLyteBUN.F26, df_labs$Lab.AmLyteBUN.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteBUN.D1, -10000))
@@ -252,9 +286,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteBUN.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteBUN.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteBUN.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteBUN.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteBUN.D7, -10000))
 df_labs$Lab.AmLyteBUN.F3 <- pmax(df_labs$Lab.AmLyteBUN.F31, df_labs$Lab.AmLyteBUN.F32, 
                                  df_labs$Lab.AmLyteBUN.F33, df_labs$Lab.AmLyteBUN.F34,
-                                 df_labs$Lab.AmLyteBUN.F35, df_labs$Lab.AmLyteBUN.F36)
+                                 df_labs$Lab.AmLyteBUN.F35, df_labs$Lab.AmLyteBUN.F36, df_labs$Lab.AmLyteBUN.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteBUN.D1, -10000))
@@ -268,9 +304,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteBUN.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteBUN.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteBUN.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteBUN.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteBUN.D7, -10000))
 df_labs$Lab.AmLyteBUN.F4 <- pmax(df_labs$Lab.AmLyteBUN.F41, df_labs$Lab.AmLyteBUN.F42, 
                                  df_labs$Lab.AmLyteBUN.F43, df_labs$Lab.AmLyteBUN.F44,
-                                 df_labs$Lab.AmLyteBUN.F45, df_labs$Lab.AmLyteBUN.F46)
+                                 df_labs$Lab.AmLyteBUN.F45, df_labs$Lab.AmLyteBUN.F46, df_labs$Lab.AmLyteBUN.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteBUN.D1, -10000))
@@ -284,9 +322,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteBUN.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteBUN.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteBUN.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteBUN.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteBUN.D7, -10000))
 df_labs$Lab.AmLyteBUN.F5 <- pmax(df_labs$Lab.AmLyteBUN.F51, df_labs$Lab.AmLyteBUN.F52, 
                                  df_labs$Lab.AmLyteBUN.F53, df_labs$Lab.AmLyteBUN.F54,
-                                 df_labs$Lab.AmLyteBUN.F55, df_labs$Lab.AmLyteBUN.F56)
+                                 df_labs$Lab.AmLyteBUN.F55, df_labs$Lab.AmLyteBUN.F56, df_labs$Lab.AmLyteBUN.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteBUN.D1, -10000))
@@ -300,9 +340,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteBUN.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteBUN.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteBUN.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteBUN.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteBUN.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteBUN.D7, -10000))
 df_labs$Lab.AmLyteBUN.F6 <- pmax(df_labs$Lab.AmLyteBUN.F61, df_labs$Lab.AmLyteBUN.F62, 
                                  df_labs$Lab.AmLyteBUN.F63, df_labs$Lab.AmLyteBUN.F64,
-                                 df_labs$Lab.AmLyteBUN.F65, df_labs$Lab.AmLyteBUN.F66)
+                                 df_labs$Lab.AmLyteBUN.F65, df_labs$Lab.AmLyteBUN.F66, df_labs$Lab.AmLyteBUN.F67)
 
 ```
 
@@ -321,9 +363,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALT.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteALT.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteALT.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALT.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteALT.D7, -10000))
 df_labs$Lab.AmLyteALT.F1 <- pmax(df_labs$Lab.AmLyteALT.F11, df_labs$Lab.AmLyteALT.F12, 
                                  df_labs$Lab.AmLyteALT.F13, df_labs$Lab.AmLyteALT.F14,
-                                 df_labs$Lab.AmLyteALT.F15, df_labs$Lab.AmLyteALT.F16)
+                                 df_labs$Lab.AmLyteALT.F15, df_labs$Lab.AmLyteALT.F16, df_labs$Lab.AmLyteALT.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteALT.D1, -10000))
@@ -337,9 +381,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALT.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteALT.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteALT.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALT.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteALT.D7, -10000))
 df_labs$Lab.AmLyteALT.F2 <- pmax(df_labs$Lab.AmLyteALT.F21, df_labs$Lab.AmLyteALT.F22, 
                                  df_labs$Lab.AmLyteALT.F23, df_labs$Lab.AmLyteALT.F24,
-                                 df_labs$Lab.AmLyteALT.F25, df_labs$Lab.AmLyteALT.F26)
+                                 df_labs$Lab.AmLyteALT.F25, df_labs$Lab.AmLyteALT.F26, df_labs$Lab.AmLyteALT.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteALT.D1, -10000))
@@ -353,9 +399,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALT.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteALT.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteALT.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALT.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteALT.D7, -10000))
 df_labs$Lab.AmLyteALT.F3 <- pmax(df_labs$Lab.AmLyteALT.F31, df_labs$Lab.AmLyteALT.F32, 
                                  df_labs$Lab.AmLyteALT.F33, df_labs$Lab.AmLyteALT.F34,
-                                 df_labs$Lab.AmLyteALT.F35, df_labs$Lab.AmLyteALT.F36)
+                                 df_labs$Lab.AmLyteALT.F35, df_labs$Lab.AmLyteALT.F36, df_labs$Lab.AmLyteALT.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteALT.D1, -10000))
@@ -369,9 +417,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALT.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteALT.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteALT.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALT.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteALT.D7, -10000))
 df_labs$Lab.AmLyteALT.F4 <- pmax(df_labs$Lab.AmLyteALT.F41, df_labs$Lab.AmLyteALT.F42, 
                                  df_labs$Lab.AmLyteALT.F43, df_labs$Lab.AmLyteALT.F44,
-                                 df_labs$Lab.AmLyteALT.F45, df_labs$Lab.AmLyteALT.F46)
+                                 df_labs$Lab.AmLyteALT.F45, df_labs$Lab.AmLyteALT.F46, df_labs$Lab.AmLyteALT.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteALT.D1, -10000))
@@ -385,9 +435,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALT.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteALT.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteALT.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALT.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteALT.D7, -10000))
 df_labs$Lab.AmLyteALT.F5 <- pmax(df_labs$Lab.AmLyteALT.F51, df_labs$Lab.AmLyteALT.F52, 
                                  df_labs$Lab.AmLyteALT.F53, df_labs$Lab.AmLyteALT.F54,
-                                 df_labs$Lab.AmLyteALT.F55, df_labs$Lab.AmLyteALT.F56)
+                                 df_labs$Lab.AmLyteALT.F55, df_labs$Lab.AmLyteALT.F56, df_labs$Lab.AmLyteALT.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteALT.D1, -10000))
@@ -401,9 +453,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALT.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteALT.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALT.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteALT.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALT.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteALT.D7, -10000))
 df_labs$Lab.AmLyteALT.F6 <- pmax(df_labs$Lab.AmLyteALT.F61, df_labs$Lab.AmLyteALT.F62, 
                                  df_labs$Lab.AmLyteALT.F63, df_labs$Lab.AmLyteALT.F64,
-                                 df_labs$Lab.AmLyteALT.F65, df_labs$Lab.AmLyteALT.F66)
+                                 df_labs$Lab.AmLyteALT.F65, df_labs$Lab.AmLyteALT.F66, df_labs$Lab.AmLyteALT.F67)
 
 ```
 
@@ -422,9 +476,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteAST.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteAST.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteAST.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteAST.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteAST.D7, -10000))
 df_labs$Lab.AmLyteAST.F1 <- pmax(df_labs$Lab.AmLyteAST.F11, df_labs$Lab.AmLyteAST.F12, 
                                  df_labs$Lab.AmLyteAST.F13, df_labs$Lab.AmLyteAST.F14,
-                                 df_labs$Lab.AmLyteAST.F15, df_labs$Lab.AmLyteAST.F16)
+                                 df_labs$Lab.AmLyteAST.F15, df_labs$Lab.AmLyteAST.F16, df_labs$Lab.AmLyteAST.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteAST.D1, -10000))
@@ -438,9 +494,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteAST.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteAST.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteAST.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteAST.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteAST.D7, -10000))
 df_labs$Lab.AmLyteAST.F2 <- pmax(df_labs$Lab.AmLyteAST.F21, df_labs$Lab.AmLyteAST.F22, 
                                  df_labs$Lab.AmLyteAST.F23, df_labs$Lab.AmLyteAST.F24,
-                                 df_labs$Lab.AmLyteAST.F25, df_labs$Lab.AmLyteAST.F26)
+                                 df_labs$Lab.AmLyteAST.F25, df_labs$Lab.AmLyteAST.F26, df_labs$Lab.AmLyteAST.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteAST.D1, -10000))
@@ -454,9 +512,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteAST.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteAST.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteAST.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteAST.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteAST.D7, -10000))
 df_labs$Lab.AmLyteAST.F3 <- pmax(df_labs$Lab.AmLyteAST.F31, df_labs$Lab.AmLyteAST.F32, 
                                  df_labs$Lab.AmLyteAST.F33, df_labs$Lab.AmLyteAST.F34,
-                                 df_labs$Lab.AmLyteAST.F35, df_labs$Lab.AmLyteAST.F36)
+                                 df_labs$Lab.AmLyteAST.F35, df_labs$Lab.AmLyteAST.F36, df_labs$Lab.AmLyteAST.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteAST.D1, -10000))
@@ -470,9 +530,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteAST.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteAST.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteAST.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteAST.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteAST.D7, -10000))
 df_labs$Lab.AmLyteAST.F4 <- pmax(df_labs$Lab.AmLyteAST.F41, df_labs$Lab.AmLyteAST.F42, 
                                  df_labs$Lab.AmLyteAST.F43, df_labs$Lab.AmLyteAST.F44,
-                                 df_labs$Lab.AmLyteAST.F45, df_labs$Lab.AmLyteAST.F46)
+                                 df_labs$Lab.AmLyteAST.F45, df_labs$Lab.AmLyteAST.F46, df_labs$Lab.AmLyteAST.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteAST.D1, -10000))
@@ -486,9 +548,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteAST.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteAST.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteAST.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteAST.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteAST.D7, -10000))
 df_labs$Lab.AmLyteAST.F5 <- pmax(df_labs$Lab.AmLyteAST.F51, df_labs$Lab.AmLyteAST.F52, 
                                  df_labs$Lab.AmLyteAST.F53, df_labs$Lab.AmLyteAST.F54,
-                                 df_labs$Lab.AmLyteAST.F55, df_labs$Lab.AmLyteAST.F56)
+                                 df_labs$Lab.AmLyteAST.F55, df_labs$Lab.AmLyteAST.F56, df_labs$Lab.AmLyteAST.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteAST.D1, -10000))
@@ -502,9 +566,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteAST.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteAST.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteAST.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteAST.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteAST.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteAST.D7, -10000))
 df_labs$Lab.AmLyteAST.F6 <- pmax(df_labs$Lab.AmLyteAST.F61, df_labs$Lab.AmLyteAST.F62, 
                                  df_labs$Lab.AmLyteAST.F63, df_labs$Lab.AmLyteAST.F64,
-                                 df_labs$Lab.AmLyteAST.F65, df_labs$Lab.AmLyteAST.F66)
+                                 df_labs$Lab.AmLyteAST.F65, df_labs$Lab.AmLyteAST.F66, df_labs$Lab.AmLyteAST.F67)
 
 ```
 
@@ -523,9 +589,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCK.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteCK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteCK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCK.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteCK.D7, -10000))
 df_labs$Lab.AmLyteCK.F1 <- pmax(df_labs$Lab.AmLyteCK.F11, df_labs$Lab.AmLyteCK.F12, 
                                  df_labs$Lab.AmLyteCK.F13, df_labs$Lab.AmLyteCK.F14,
-                                 df_labs$Lab.AmLyteCK.F15, df_labs$Lab.AmLyteCK.F16)
+                                 df_labs$Lab.AmLyteCK.F15, df_labs$Lab.AmLyteCK.F16, df_labs$Lab.AmLyteCK.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteCK.D1, -10000))
@@ -539,9 +607,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCK.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteCK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteCK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCK.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteCK.D7, -10000))
 df_labs$Lab.AmLyteCK.F2 <- pmax(df_labs$Lab.AmLyteCK.F21, df_labs$Lab.AmLyteCK.F22, 
                                  df_labs$Lab.AmLyteCK.F23, df_labs$Lab.AmLyteCK.F24,
-                                 df_labs$Lab.AmLyteCK.F25, df_labs$Lab.AmLyteCK.F26)
+                                 df_labs$Lab.AmLyteCK.F25, df_labs$Lab.AmLyteCK.F26, df_labs$Lab.AmLyteCK.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteCK.D1, -10000))
@@ -555,9 +625,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCK.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteCK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteCK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCK.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteCK.D7, -10000))
 df_labs$Lab.AmLyteCK.F3 <- pmax(df_labs$Lab.AmLyteCK.F31, df_labs$Lab.AmLyteCK.F32, 
                                  df_labs$Lab.AmLyteCK.F33, df_labs$Lab.AmLyteCK.F34,
-                                 df_labs$Lab.AmLyteCK.F35, df_labs$Lab.AmLyteCK.F36)
+                                 df_labs$Lab.AmLyteCK.F35, df_labs$Lab.AmLyteCK.F36, df_labs$Lab.AmLyteCK.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteCK.D1, -10000))
@@ -571,9 +643,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCK.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteCK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteCK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCK.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteCK.D7, -10000))
 df_labs$Lab.AmLyteCK.F4 <- pmax(df_labs$Lab.AmLyteCK.F41, df_labs$Lab.AmLyteCK.F42, 
                                  df_labs$Lab.AmLyteCK.F43, df_labs$Lab.AmLyteCK.F44,
-                                 df_labs$Lab.AmLyteCK.F45, df_labs$Lab.AmLyteCK.F46)
+                                 df_labs$Lab.AmLyteCK.F45, df_labs$Lab.AmLyteCK.F46, df_labs$Lab.AmLyteCK.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteCK.D1, -10000))
@@ -587,9 +661,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCK.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteCK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteCK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCK.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteCK.D7, -10000))
 df_labs$Lab.AmLyteCK.F5 <- pmax(df_labs$Lab.AmLyteCK.F51, df_labs$Lab.AmLyteCK.F52, 
                                  df_labs$Lab.AmLyteCK.F53, df_labs$Lab.AmLyteCK.F54,
-                                 df_labs$Lab.AmLyteCK.F55, df_labs$Lab.AmLyteCK.F56)
+                                 df_labs$Lab.AmLyteCK.F55, df_labs$Lab.AmLyteCK.F56, df_labs$Lab.AmLyteCK.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteCK.D1, -10000))
@@ -603,9 +679,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCK.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteCK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCK.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteCK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCK.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteCK.D7, -10000))
 df_labs$Lab.AmLyteCK.F6 <- pmax(df_labs$Lab.AmLyteCK.F61, df_labs$Lab.AmLyteCK.F62, 
                                  df_labs$Lab.AmLyteCK.F63, df_labs$Lab.AmLyteCK.F64,
-                                 df_labs$Lab.AmLyteCK.F65, df_labs$Lab.AmLyteCK.F66)
+                                 df_labs$Lab.AmLyteCK.F65, df_labs$Lab.AmLyteCK.F66, df_labs$Lab.AmLyteCK.F67)
 
 ```
 
@@ -624,9 +702,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALB.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteALB.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteALB.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALB.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteALB.D7, -10000))
 df_labs$Lab.AmLyteALB.F1 <- pmax(df_labs$Lab.AmLyteALB.F11, df_labs$Lab.AmLyteALB.F12, 
                                  df_labs$Lab.AmLyteALB.F13, df_labs$Lab.AmLyteALB.F14,
-                                 df_labs$Lab.AmLyteALB.F15, df_labs$Lab.AmLyteALB.F16)
+                                 df_labs$Lab.AmLyteALB.F15, df_labs$Lab.AmLyteALB.F16, df_labs$Lab.AmLyteALB.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteALB.D1, -10000))
@@ -640,9 +720,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALB.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteALB.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteALB.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALB.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteALB.D7, -10000))
 df_labs$Lab.AmLyteALB.F2 <- pmax(df_labs$Lab.AmLyteALB.F21, df_labs$Lab.AmLyteALB.F22, 
                                  df_labs$Lab.AmLyteALB.F23, df_labs$Lab.AmLyteALB.F24,
-                                 df_labs$Lab.AmLyteALB.F25, df_labs$Lab.AmLyteALB.F26)
+                                 df_labs$Lab.AmLyteALB.F25, df_labs$Lab.AmLyteALB.F26, df_labs$Lab.AmLyteALB.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteALB.D1, -10000))
@@ -656,9 +738,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALB.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteALB.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteALB.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALB.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteALB.D7, -10000))
 df_labs$Lab.AmLyteALB.F3 <- pmax(df_labs$Lab.AmLyteALB.F31, df_labs$Lab.AmLyteALB.F32, 
                                  df_labs$Lab.AmLyteALB.F33, df_labs$Lab.AmLyteALB.F34,
-                                 df_labs$Lab.AmLyteALB.F35, df_labs$Lab.AmLyteALB.F36)
+                                 df_labs$Lab.AmLyteALB.F35, df_labs$Lab.AmLyteALB.F36, df_labs$Lab.AmLyteALB.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteALB.D1, -10000))
@@ -672,9 +756,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALB.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteALB.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteALB.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALB.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteALB.D7, -10000))
 df_labs$Lab.AmLyteALB.F4 <- pmax(df_labs$Lab.AmLyteALB.F41, df_labs$Lab.AmLyteALB.F42, 
                                  df_labs$Lab.AmLyteALB.F43, df_labs$Lab.AmLyteALB.F44,
-                                 df_labs$Lab.AmLyteALB.F45, df_labs$Lab.AmLyteALB.F46)
+                                 df_labs$Lab.AmLyteALB.F45, df_labs$Lab.AmLyteALB.F46, df_labs$Lab.AmLyteALB.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteALB.D1, -10000))
@@ -688,9 +774,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALB.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteALB.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteALB.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALB.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteALB.D7, -10000))
 df_labs$Lab.AmLyteALB.F5 <- pmax(df_labs$Lab.AmLyteALB.F51, df_labs$Lab.AmLyteALB.F52, 
                                  df_labs$Lab.AmLyteALB.F53, df_labs$Lab.AmLyteALB.F54,
-                                 df_labs$Lab.AmLyteALB.F55, df_labs$Lab.AmLyteALB.F56)
+                                 df_labs$Lab.AmLyteALB.F55, df_labs$Lab.AmLyteALB.F56, df_labs$Lab.AmLyteALB.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteALB.D1, -10000))
@@ -704,9 +792,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteALB.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteALB.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteALB.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteALB.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteALB.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteALB.D7, -10000))
 df_labs$Lab.AmLyteALB.F6 <- pmax(df_labs$Lab.AmLyteALB.F61, df_labs$Lab.AmLyteALB.F62, 
                                  df_labs$Lab.AmLyteALB.F63, df_labs$Lab.AmLyteALB.F64,
-                                 df_labs$Lab.AmLyteALB.F65, df_labs$Lab.AmLyteALB.F66)
+                                 df_labs$Lab.AmLyteALB.F65, df_labs$Lab.AmLyteALB.F66, df_labs$Lab.AmLyteALB.F67)
 
 ```
 
@@ -725,9 +815,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteK.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteK.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteK.D7, -10000))
 df_labs$Lab.AmLyteK.F1 <- pmax(df_labs$Lab.AmLyteK.F11, df_labs$Lab.AmLyteK.F12, 
                                  df_labs$Lab.AmLyteK.F13, df_labs$Lab.AmLyteK.F14,
-                                 df_labs$Lab.AmLyteK.F15, df_labs$Lab.AmLyteK.F16)
+                                 df_labs$Lab.AmLyteK.F15, df_labs$Lab.AmLyteK.F16, df_labs$Lab.AmLyteK.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteK.D1, -10000))
@@ -741,9 +833,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteK.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteK.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteK.D7, -10000))
 df_labs$Lab.AmLyteK.F2 <- pmax(df_labs$Lab.AmLyteK.F21, df_labs$Lab.AmLyteK.F22, 
                                  df_labs$Lab.AmLyteK.F23, df_labs$Lab.AmLyteK.F24,
-                                 df_labs$Lab.AmLyteK.F25, df_labs$Lab.AmLyteK.F26)
+                                 df_labs$Lab.AmLyteK.F25, df_labs$Lab.AmLyteK.F26, df_labs$Lab.AmLyteK.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteK.D1, -10000))
@@ -757,9 +851,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteK.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteK.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteK.D7, -10000))
 df_labs$Lab.AmLyteK.F3 <- pmax(df_labs$Lab.AmLyteK.F31, df_labs$Lab.AmLyteK.F32, 
                                  df_labs$Lab.AmLyteK.F33, df_labs$Lab.AmLyteK.F34,
-                                 df_labs$Lab.AmLyteK.F35, df_labs$Lab.AmLyteK.F36)
+                                 df_labs$Lab.AmLyteK.F35, df_labs$Lab.AmLyteK.F36, df_labs$Lab.AmLyteK.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteK.D1, -10000))
@@ -773,9 +869,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteK.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteK.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteK.D7, -10000))
 df_labs$Lab.AmLyteK.F4 <- pmax(df_labs$Lab.AmLyteK.F41, df_labs$Lab.AmLyteK.F42, 
                                  df_labs$Lab.AmLyteK.F43, df_labs$Lab.AmLyteK.F44,
-                                 df_labs$Lab.AmLyteK.F45, df_labs$Lab.AmLyteK.F46)
+                                 df_labs$Lab.AmLyteK.F45, df_labs$Lab.AmLyteK.F46, df_labs$Lab.AmLyteK.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteK.D1, -10000))
@@ -789,9 +887,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteK.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteK.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteK.D7, -10000))
 df_labs$Lab.AmLyteK.F5 <- pmax(df_labs$Lab.AmLyteK.F51, df_labs$Lab.AmLyteK.F52, 
                                  df_labs$Lab.AmLyteK.F53, df_labs$Lab.AmLyteK.F54,
-                                 df_labs$Lab.AmLyteK.F55, df_labs$Lab.AmLyteK.F56)
+                                 df_labs$Lab.AmLyteK.F55, df_labs$Lab.AmLyteK.F56, df_labs$Lab.AmLyteK.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteK.D1, -10000))
@@ -805,9 +905,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteK.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteK.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteK.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteK.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteK.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteK.D7, -10000))
 df_labs$Lab.AmLyteK.F6 <- pmax(df_labs$Lab.AmLyteK.F61, df_labs$Lab.AmLyteK.F62, 
                                  df_labs$Lab.AmLyteK.F63, df_labs$Lab.AmLyteK.F64,
-                                 df_labs$Lab.AmLyteK.F65, df_labs$Lab.AmLyteK.F66)
+                                 df_labs$Lab.AmLyteK.F65, df_labs$Lab.AmLyteK.F66, df_labs$Lab.AmLyteK.F67)
 
 ```
 
@@ -826,9 +928,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRE.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteCRE.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteCRE.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRE.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteCRE.D7, -10000))
 df_labs$Lab.AmLyteCRE.F1 <- pmax(df_labs$Lab.AmLyteCRE.F11, df_labs$Lab.AmLyteCRE.F12, 
                                  df_labs$Lab.AmLyteCRE.F13, df_labs$Lab.AmLyteCRE.F14,
-                                 df_labs$Lab.AmLyteCRE.F15, df_labs$Lab.AmLyteCRE.F16)
+                                 df_labs$Lab.AmLyteCRE.F15, df_labs$Lab.AmLyteCRE.F16, df_labs$Lab.AmLyteCRE.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteCRE.D1, -10000))
@@ -842,9 +946,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRE.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteCRE.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteCRE.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRE.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteCRE.D7, -10000))
 df_labs$Lab.AmLyteCRE.F2 <- pmax(df_labs$Lab.AmLyteCRE.F21, df_labs$Lab.AmLyteCRE.F22, 
                                  df_labs$Lab.AmLyteCRE.F23, df_labs$Lab.AmLyteCRE.F24,
-                                 df_labs$Lab.AmLyteCRE.F25, df_labs$Lab.AmLyteCRE.F26)
+                                 df_labs$Lab.AmLyteCRE.F25, df_labs$Lab.AmLyteCRE.F26, df_labs$Lab.AmLyteCRE.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteCRE.D1, -10000))
@@ -858,9 +964,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRE.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteCRE.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteCRE.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRE.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteCRE.D7, -10000))
 df_labs$Lab.AmLyteCRE.F3 <- pmax(df_labs$Lab.AmLyteCRE.F31, df_labs$Lab.AmLyteCRE.F32, 
                                  df_labs$Lab.AmLyteCRE.F33, df_labs$Lab.AmLyteCRE.F34,
-                                 df_labs$Lab.AmLyteCRE.F35, df_labs$Lab.AmLyteCRE.F36)
+                                 df_labs$Lab.AmLyteCRE.F35, df_labs$Lab.AmLyteCRE.F36, df_labs$Lab.AmLyteCRE.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteCRE.D1, -10000))
@@ -874,9 +982,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRE.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteCRE.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteCRE.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRE.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteCRE.D7, -10000))
 df_labs$Lab.AmLyteCRE.F4 <- pmax(df_labs$Lab.AmLyteCRE.F41, df_labs$Lab.AmLyteCRE.F42, 
                                  df_labs$Lab.AmLyteCRE.F43, df_labs$Lab.AmLyteCRE.F44,
-                                 df_labs$Lab.AmLyteCRE.F45, df_labs$Lab.AmLyteCRE.F46)
+                                 df_labs$Lab.AmLyteCRE.F45, df_labs$Lab.AmLyteCRE.F46, df_labs$Lab.AmLyteCRE.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteCRE.D1, -10000))
@@ -890,9 +1000,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRE.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteCRE.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteCRE.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRE.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteCRE.D7, -10000))
 df_labs$Lab.AmLyteCRE.F5 <- pmax(df_labs$Lab.AmLyteCRE.F51, df_labs$Lab.AmLyteCRE.F52, 
                                  df_labs$Lab.AmLyteCRE.F53, df_labs$Lab.AmLyteCRE.F54,
-                                 df_labs$Lab.AmLyteCRE.F55, df_labs$Lab.AmLyteCRE.F56)
+                                 df_labs$Lab.AmLyteCRE.F55, df_labs$Lab.AmLyteCRE.F56, df_labs$Lab.AmLyteCRE.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteCRE.D1, -10000))
@@ -906,9 +1018,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRE.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteCRE.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRE.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteCRE.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRE.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteCRE.D7, -10000))
 df_labs$Lab.AmLyteCRE.F6 <- pmax(df_labs$Lab.AmLyteCRE.F61, df_labs$Lab.AmLyteCRE.F62, 
                                  df_labs$Lab.AmLyteCRE.F63, df_labs$Lab.AmLyteCRE.F64,
-                                 df_labs$Lab.AmLyteCRE.F65, df_labs$Lab.AmLyteCRE.F66)
+                                 df_labs$Lab.AmLyteCRE.F65, df_labs$Lab.AmLyteCRE.F66, df_labs$Lab.AmLyteCRE.F67)
 
 ```
 
@@ -927,9 +1041,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRP.F15 = ifelse(-1 <= Lab.SampleDiff.D5 & Lab.SampleDiff.D5 <= 1, Lab.AmLyteCRP.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F16 = ifelse(-1 <= Lab.SampleDiff.D6 & Lab.SampleDiff.D6 <= 1, Lab.AmLyteCRP.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRP.F17 = ifelse(-1 <= Lab.SampleDiff.D7 & Lab.SampleDiff.D7 <= 1, Lab.AmLyteCRP.D7, -10000))
 df_labs$Lab.AmLyteCRP.F1 <- pmax(df_labs$Lab.AmLyteCRP.F11, df_labs$Lab.AmLyteCRP.F12, 
                                  df_labs$Lab.AmLyteCRP.F13, df_labs$Lab.AmLyteCRP.F14,
-                                 df_labs$Lab.AmLyteCRP.F15, df_labs$Lab.AmLyteCRP.F16)
+                                 df_labs$Lab.AmLyteCRP.F15, df_labs$Lab.AmLyteCRP.F16, df_labs$Lab.AmLyteCRP.F17)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F21 = ifelse(Lab.SampleDiff.D1 == 2, Lab.AmLyteCRP.D1, -10000))
@@ -943,9 +1059,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRP.F25 = ifelse(Lab.SampleDiff.D5 == 2, Lab.AmLyteCRP.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F26 = ifelse(Lab.SampleDiff.D6 == 2, Lab.AmLyteCRP.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRP.F27 = ifelse(Lab.SampleDiff.D7 == 2, Lab.AmLyteCRP.D7, -10000))
 df_labs$Lab.AmLyteCRP.F2 <- pmax(df_labs$Lab.AmLyteCRP.F21, df_labs$Lab.AmLyteCRP.F22, 
                                  df_labs$Lab.AmLyteCRP.F23, df_labs$Lab.AmLyteCRP.F24,
-                                 df_labs$Lab.AmLyteCRP.F25, df_labs$Lab.AmLyteCRP.F26)
+                                 df_labs$Lab.AmLyteCRP.F25, df_labs$Lab.AmLyteCRP.F26, df_labs$Lab.AmLyteCRP.F27)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F31 = ifelse(Lab.SampleDiff.D1 == 3, Lab.AmLyteCRP.D1, -10000))
@@ -959,9 +1077,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRP.F35 = ifelse(Lab.SampleDiff.D5 == 3, Lab.AmLyteCRP.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F36 = ifelse(Lab.SampleDiff.D6 == 3, Lab.AmLyteCRP.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRP.F37 = ifelse(Lab.SampleDiff.D7 == 3, Lab.AmLyteCRP.D7, -10000))
 df_labs$Lab.AmLyteCRP.F3 <- pmax(df_labs$Lab.AmLyteCRP.F31, df_labs$Lab.AmLyteCRP.F32, 
                                  df_labs$Lab.AmLyteCRP.F33, df_labs$Lab.AmLyteCRP.F34,
-                                 df_labs$Lab.AmLyteCRP.F35, df_labs$Lab.AmLyteCRP.F36)
+                                 df_labs$Lab.AmLyteCRP.F35, df_labs$Lab.AmLyteCRP.F36, df_labs$Lab.AmLyteCRP.F37)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F41 = ifelse(Lab.SampleDiff.D1 == 4, Lab.AmLyteCRP.D1, -10000))
@@ -975,9 +1095,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRP.F45 = ifelse(Lab.SampleDiff.D5 == 4, Lab.AmLyteCRP.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F46 = ifelse(Lab.SampleDiff.D6 == 4, Lab.AmLyteCRP.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRP.F47 = ifelse(Lab.SampleDiff.D7 == 4, Lab.AmLyteCRP.D7, -10000))
 df_labs$Lab.AmLyteCRP.F4 <- pmax(df_labs$Lab.AmLyteCRP.F41, df_labs$Lab.AmLyteCRP.F42, 
                                  df_labs$Lab.AmLyteCRP.F43, df_labs$Lab.AmLyteCRP.F44,
-                                 df_labs$Lab.AmLyteCRP.F45, df_labs$Lab.AmLyteCRP.F46)
+                                 df_labs$Lab.AmLyteCRP.F45, df_labs$Lab.AmLyteCRP.F46, df_labs$Lab.AmLyteCRP.F47)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F51 = ifelse(Lab.SampleDiff.D1 == 5, Lab.AmLyteCRP.D1, -10000))
@@ -991,9 +1113,11 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRP.F55 = ifelse(Lab.SampleDiff.D5 == 5, Lab.AmLyteCRP.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F56 = ifelse(Lab.SampleDiff.D6 == 5, Lab.AmLyteCRP.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRP.F57 = ifelse(Lab.SampleDiff.D7 == 5, Lab.AmLyteCRP.D7, -10000))
 df_labs$Lab.AmLyteCRP.F5 <- pmax(df_labs$Lab.AmLyteCRP.F51, df_labs$Lab.AmLyteCRP.F52, 
                                  df_labs$Lab.AmLyteCRP.F53, df_labs$Lab.AmLyteCRP.F54,
-                                 df_labs$Lab.AmLyteCRP.F55, df_labs$Lab.AmLyteCRP.F56)
+                                 df_labs$Lab.AmLyteCRP.F55, df_labs$Lab.AmLyteCRP.F56, df_labs$Lab.AmLyteCRP.F57)
 
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F61 = ifelse(Lab.SampleDiff.D1 == 6, Lab.AmLyteCRP.D1, -10000))
@@ -1007,17 +1131,17 @@ df_labs <- df_labs %>%
   mutate(Lab.AmLyteCRP.F65 = ifelse(Lab.SampleDiff.D5 == 6, Lab.AmLyteCRP.D5, -10000))
 df_labs <- df_labs %>% 
   mutate(Lab.AmLyteCRP.F66 = ifelse(Lab.SampleDiff.D6 == 6, Lab.AmLyteCRP.D6, -10000))
+df_labs <- df_labs %>% 
+  mutate(Lab.AmLyteCRP.F67 = ifelse(Lab.SampleDiff.D7 == 6, Lab.AmLyteCRP.D7, -10000))
 df_labs$Lab.AmLyteCRP.F6 <- pmax(df_labs$Lab.AmLyteCRP.F61, df_labs$Lab.AmLyteCRP.F62, 
                                  df_labs$Lab.AmLyteCRP.F63, df_labs$Lab.AmLyteCRP.F64,
-                                 df_labs$Lab.AmLyteCRP.F65, df_labs$Lab.AmLyteCRP.F66)
+                                 df_labs$Lab.AmLyteCRP.F65, df_labs$Lab.AmLyteCRP.F66, df_labs$Lab.AmLyteCRP.F67)
 
 ```
 
 ```{r}
 # Restoring NAs
 df_labs[df_labs == -10000] <- NA
-
-df_labs
 ```
 
 ```{r}
@@ -1028,33 +1152,58 @@ df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1,
                ifelse(df_raw$S7.FinalStatus==1, 0, 
                       df_raw$S7.FinalStatus))
 
-# Using 1-2, 3-4, 5-6 groups
 for (var in lab_vars) {
+  take_min <- (var == "Lab.CtNP")
+  print(var)
+  
   vars12 <- paste0(paste0(var, '.F'), 1:2)
   v12 = paste0(short_names[var], '12')
-  df_final[v12] <- rowMaxs(as.matrix(df_labs[,vars12]), na.rm = TRUE)
+  if (take_min) {
+      df_final[v12] <- rowMins(as.matrix(df_labs[,vars12]), na.rm = TRUE)
+  } else {
+      df_final[v12] <- rowMaxs(as.matrix(df_labs[,vars12]), na.rm = TRUE)  
+  }
   
   vars34 <- paste0(paste0(var, '.F'), 3:4)
   v34 = paste0(short_names[var], '34')
-  df_final[v34] <- rowMaxs(as.matrix(df_labs[,vars34]), na.rm = TRUE)
+  if (take_min) {
+    df_final[v34] <- rowMins(as.matrix(df_labs[,vars34]), na.rm = TRUE)
+  } else {
+    df_final[v34] <- rowMaxs(as.matrix(df_labs[,vars34]), na.rm = TRUE)
+  }
   
   vars56 <- paste0(paste0(var, '.F'), 5:6)
   v56 = paste0(short_names[var], '56')
-  df_final[v56] <- rowMaxs(as.matrix(df_labs[,vars56]), na.rm = TRUE)
+  if (take_min) {
+    df_final[v56] <- rowMins(as.matrix(df_labs[,vars56]), na.rm = TRUE)
+  } else {
+    df_final[v56] <- rowMaxs(as.matrix(df_labs[,vars56]), na.rm = TRUE)
+  }
 }
 
 # Using 1-2-3, 4-5-6 groups
 for (var in lab_vars) {
+  take_min <- (var == "Lab.CtNP")
+  
   vars123 <- paste0(paste0(var, '.F'), 1:3)
   v123 = paste0(short_names[var], '123')
-  df_final[v123] <- rowMaxs(as.matrix(df_labs[,vars123]), na.rm = TRUE)
+  if (take_min) {
+    df_final[v123] <- rowMins(as.matrix(df_labs[,vars123]), na.rm = TRUE)
+  } else {
+    df_final[v123] <- rowMaxs(as.matrix(df_labs[,vars123]), na.rm = TRUE)
+  }
 
   vars456 <- paste0(paste0(var, '.F'), 4:6)
   v456 = paste0(short_names[var], '456')
-  df_final[v456] <- rowMaxs(as.matrix(df_labs[,vars456]), na.rm = TRUE)
+  if (take_min) {
+    df_final[v456] <- rowMins(as.matrix(df_labs[,vars456]), na.rm = TRUE)
+  } else {
+    df_final[v456] <- rowMaxs(as.matrix(df_labs[,vars456]), na.rm = TRUE)
+  }
 }
 
 df_final <- df_final %>% replace_with_na_all(condition = ~.x == -Inf)
+df_final <- df_final %>% replace_with_na_all(condition = ~.x == Inf)
 df_final
 ```
 
