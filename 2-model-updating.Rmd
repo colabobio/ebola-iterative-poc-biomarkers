@@ -117,7 +117,7 @@ varf12
 
 ```{r}
 # Apply threshold
-day12_sel_thres <- 0.75
+day12_sel_thres <- 0.5
 sel12 <- varf12 %>% filter(Freq > day12_sel_thres)
 sel12
 ```
@@ -177,7 +177,7 @@ varf34
 
 ```{r}
 # Apply threshold
-day34_sel_thres <- 0.75
+day34_sel_thres <- 0.5
 sel34 <- varf34 %>% filter(Freq > day34_sel_thres)
 sel34
 ```
