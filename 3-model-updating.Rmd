@@ -26,6 +26,8 @@ num_boot <- 200     # Number of bootstrap samples
 random_seed <- 151  # Setting random seed for reproducibility
 
 min_age <- 18       #  Minimum age for inclusion in analysis
+
+max_cor -> 0.75     # Maximum correlation between variables to be included in model
 ```
 
 ```{r}
