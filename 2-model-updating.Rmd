@@ -17,14 +17,6 @@ library(ROCit)
 
 This notebook updates iteratively updates the base prognostic model applying recalibration, by adding additional lab variables in blocks of 2 days
 
-Keep in mind that some lab results are co-linear:
-* BUN/CRE
-* ALT/AST 
-* AST/CK/K
-
-Elastic net encourages a grouping effect, where strongly correlated predictors tend to be in or out of the model together
-https://hastie.su.domains/Papers/B67.2%20(2005)%20301-320%20Zou%20&%20Hastie.pdf
-
 Some ideas to consider further:
 * If Elastic Net variable selection is applied on data w/out missing data, 
   generate frames by censoring a given percentage of data (e.g.: 10%) and apply MI
@@ -38,6 +30,8 @@ num_boot <- 200     # Number of bootstrap samples
 random_seed <- 151  # Setting random seed for reproducibility
 
 min_age <- 18       #  Minimum age for inclusion in analysis
+
+max_cor <- 0.75     # Maximum correlation between variables to be included in model
 ```
 
 ```{r}
@@ -50,6 +44,7 @@ data <- data %>% filter(days > 0)
 data$ct12 <- (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
 data$ct34 <- (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
 data$ct56 <- (data$ct56 - mean(data$ct56, na.rm=T))/sd(data$ct56, na.rm=T)
+data$ct78 <- (data$ct78 - mean(data$ct78, na.rm=T))/sd(data$ct78, na.rm=T)
 
 data
 ```
@@ -311,4 +306,30 @@ plot_data56 <- data.frame(out = full_data56$out, logodds = pred56, prob = probs5
 
 cal_plot(model56, plot_data56, "original", "prob", model_label = '', dir = mdl_folder56, fn = "cal_plot.pdf")
 roc_plot(plot_data56$out, plot_data56$prob, dir = mdl_folder56, fn = "roc_plot.pdf")
+```
+
+==============================================================================================
+UPDATED MODEL FOR DAYS 7-8
+
+```{r}
+# Apply the Elastic Net variable selecion method on all the lab variables available for days 7-8
+
+sat_imp_formula78 <- "~out + lp56 + alb78 + alt78 + ast78 + bun78 + ck78 + cre78 + crp78 + k78"
+
+vars78 <- c('out', 'lp56', 'alb78', 'alt78', 'ast78', 'bun78', 'ck78', 'cre78', 'crp78', 'k78')
+data78 <- data[complete.cases(data[, c('lp56')]),]
+data78 <- data78 %>% filter(days > 6)
+data78
+
+sout78 <- selectVariables(random_seed, num_imp, sat_imp_formula78, data78, TRUE)
+
+#varf78 <- data.frame(unlist(sout78$names), unlist(sout78$counts))
+#names(varf78) <- c("Variable", "Freq")
+#varf78 <- varf78 %>% filter(Variable != "lp56" & Variable != "(Intercept)")
+#varf78
+```
+
+```{r}
+data78$k78
+
 ```
