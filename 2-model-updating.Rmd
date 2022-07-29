@@ -286,7 +286,7 @@ dir.create(mdl_folder56)
 # https://stats.stackexchange.com/questions/117383/impute-missing-values-using-aregimpute
 model56 <- generateModel(random_seed, num_imp, num_boot, 0, mdl_imp_formula56, mdl_lgr_formula56, data56, mdl_vars56, mdl_folder56)
 
-# Add the logit contribution from the model for days 3-4 to the dataframe
+# Add the logit contribution from the model for days 5-6 to the dataframe
 data['lp56'] <- predict(model56, data)
 ```
 
@@ -323,13 +323,59 @@ data78
 
 sout78 <- selectVariables(random_seed, num_imp, sat_imp_formula78, data78, TRUE)
 
-#varf78 <- data.frame(unlist(sout78$names), unlist(sout78$counts))
-#names(varf78) <- c("Variable", "Freq")
-#varf78 <- varf78 %>% filter(Variable != "lp56" & Variable != "(Intercept)")
-#varf78
+varf78 <- data.frame(unlist(sout78$names), unlist(sout78$counts))
+names(varf78) <- c("Variable", "Freq")
+varf78 <- varf78 %>% filter(Variable != "lp56" & Variable != "(Intercept)")
+varf78
 ```
 
 ```{r}
-data78$k78
+# Apply threshold
+day78_sel_thres <- 0.5
+sel78 <- varf78 %>% filter(Freq > day78_sel_thres)
+sel78
+```
 
+```{r}
+cov78 <- cor(data78[,sel78$Variable], use='pairwise') > 0.75
+cov78
+```
+
+```{r}
+# Train the model for days 7-8 on the selected variables
+mdl_vars78 <- append(sel78$Variable, 'lp56')
+#mdl_vars78 <- mdl_vars78[! mdl_vars78 %in% c()] # Remove highly correlated variables
+mdl_vars78
+
+mdl_imp_formula78 <- "~out + lp56 + alb78 + alt78 + ast78 + bun78 + ck78 + cre78 + crp78 + k78"
+mdl_lgr_formula78 <- paste('out', paste(mdl_vars78, collapse=" + "), sep=" ~ ")
+mdl_lgr_formula78
+
+mdl_folder78 <- "model-days78"
+dir.create(mdl_folder78)
+
+# setting number of knots to zero based on this discussion:
+# https://stats.stackexchange.com/questions/117383/impute-missing-values-using-aregimpute
+model78 <- generateModel(random_seed, num_imp, num_boot, 0, mdl_imp_formula78, mdl_lgr_formula78, data78, mdl_vars78, mdl_folder78)
+
+# Add the logit contribution from the model for days 7-8 to the dataframe
+data['lp78'] <- predict(model78, data)
+```
+
+```{r}
+# Generate the calibration and ROC plots for the models for days 7-8
+
+vars <- append(mdl_vars78, 'out')
+df <- data %>% select(all_of(vars))
+full_data78 <- df[complete.cases(df),]
+full_data78
+
+pred78 <- predict(model78, full_data78) # prediction in log-odds (probabilities on logit scale)
+probs78 <- 1 / (1 + exp(-pred78))  # prediction as probability response
+
+# Generate the data frame with the data needed for the calibration and ROC plots
+plot_data78 <- data.frame(out = full_data78$out, logodds = pred78, prob = probs78)
+
+cal_plot(model78, plot_data78, "original", "prob", model_label = '', dir = mdl_folder78, fn = "cal_plot.pdf")
+roc_plot(plot_data78$out, plot_data78$prob, dir = mdl_folder78, fn = "roc_plot.pdf")
 ```
