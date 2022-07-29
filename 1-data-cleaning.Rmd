@@ -25,7 +25,7 @@ short_names <- c('Lab.CtNP'='ct', 'Lab.AmLyteBUN'='bun', 'Lab.AmLyteALT'='alt', 
 
 ```{r}
 # Variable selection
-test_days <- c('.D1', '.D2', '.D3', '.D4', '.D5', '.D6', '.D7', '.D8')
+test_days <- c('.D1', '.D2', '.D3', '.D4', '.D5', '.D6', '.D7', '.D8', '.D9', '.D10', '.D11', '.D12', '.D13', '.D14')
 
 df_1to8 <- df_raw %>% select(ends_with(test_days))
 df_labs <- df_1to8 %>% select(starts_with(lab_vars))
@@ -39,17 +39,24 @@ df_labs$Lab.SampleDate.D5 <- df_raw$Lab.SampleDate.D5
 df_labs$Lab.SampleDate.D6 <- df_raw$Lab.SampleDate.D6
 df_labs$Lab.SampleDate.D7 <- df_raw$Lab.SampleDate.D7
 df_labs$Lab.SampleDate.D8 <- df_raw$Lab.SampleDate.D8
+df_labs$Lab.SampleDate.D9 <- df_raw$Lab.SampleDate.D9
+df_labs$Lab.SampleDate.D10 <- df_raw$Lab.SampleDate.D10
+df_labs$Lab.SampleDate.D11 <- df_raw$Lab.SampleDate.D11
+df_labs$Lab.SampleDate.D12 <- df_raw$Lab.SampleDate.D12
+df_labs$Lab.SampleDate.D13 <- df_raw$Lab.SampleDate.D13
+df_labs$Lab.SampleDate.D14 <- df_raw$Lab.SampleDate.D14
 ```
 
 ```{r}
 # Transform K so both extremes (low and high) map to high values
 
-k_vars <- c('Lab.AmLyteK.D1', 'Lab.AmLyteK.D2', 'Lab.AmLyteK.D3', 'Lab.AmLyteK.D4', 'Lab.AmLyteK.D5', 'Lab.AmLyteK.D6', 'Lab.AmLyteK.D7', 'Lab.AmLyteK.D8')
+k_vars <- paste0('Lab.AmLyteK.D', 1:14)
 
 # Reference range: 3.6-5.1
 k_normal = 4.35
 
 for (var in k_vars) {
+    print(var)
     m1 <- colMeans(df_labs[var], na.rm = TRUE)
     print(m1)
     df_labs[var] <- (df_labs[var] - k_normal) * (df_labs[var] - k_normal)
@@ -60,7 +67,7 @@ df_labs[k_vars]
 ```{r}
 # Transform ALB so it's inverted
 
-alb_vars <- c('Lab.AmLyteALB.D1', 'Lab.AmLyteALB.D2', 'Lab.AmLyteALB.D3', 'Lab.AmLyteALB.D4', 'Lab.AmLyteALB.D5', 'Lab.AmLyteALB.D6', 'Lab.AmLyteALB.D7', 'Lab.AmLyteALB.D8')
+alb_vars <- paste0('Lab.AmLyteALB.D', 1:14)
 
 for (var in alb_vars) {
     df_labs[var] <- 1 / df_labs[var]
@@ -79,11 +86,20 @@ df_labs$Lab.SampleDiff.D5 <- as.integer(dmy(df_labs$Lab.SampleDate.D5) - dmy(df_
 df_labs$Lab.SampleDiff.D6 <- as.integer(dmy(df_labs$Lab.SampleDate.D6) - dmy(df_labs$AD.Date))
 df_labs$Lab.SampleDiff.D7 <- as.integer(dmy(df_labs$Lab.SampleDate.D7) - dmy(df_labs$AD.Date))
 df_labs$Lab.SampleDiff.D8 <- as.integer(dmy(df_labs$Lab.SampleDate.D8) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D9 <- as.integer(dmy(df_labs$Lab.SampleDate.D9) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D10 <- as.integer(dmy(df_labs$Lab.SampleDate.D10) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D11 <- as.integer(dmy(df_labs$Lab.SampleDate.D11) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D12 <- as.integer(dmy(df_labs$Lab.SampleDate.D12) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D13 <- as.integer(dmy(df_labs$Lab.SampleDate.D13) - dmy(df_labs$AD.Date))
+df_labs$Lab.SampleDiff.D14 <- as.integer(dmy(df_labs$Lab.SampleDate.D14) - dmy(df_labs$AD.Date))
 ```
 
 ```{r}
 
-# Go over all lab variables and collect the results correspondong to each day after admission
+pred_days <- 8
+data_days <- 14
+
+# Go over all lab variables and collect the results corresponding to each day after admission up to data_days
 for (var in lab_vars) {
   print(var)
   
@@ -97,12 +113,13 @@ for (var in lab_vars) {
   }
   df_labs[is.na(df_labs)] <- large_val  
 
-  day_vars <- paste0(paste0(var, '.D'), 1:8)
-  sample_vars <- paste0(paste0("Lab.SampleDiff", '.D'), 1:8)
-  for (d in 1:8) {
+  day_vars <- paste0(paste0(var, '.D'), 1:data_days)
+  sample_vars <- paste0(paste0("Lab.SampleDiff", '.D'), 1:data_days)
+  for (d in 1:pred_days) {
     final_var <- paste0(var, '.F', d)
-    diff_vars <- paste0(paste0(var, '.F', d), 1:8)
-    for (f in 1:8) {
+    
+    diff_vars <- paste0(paste0(var, '.F', d), 1:data_days)
+    for (f in 1:data_days) {
       diffv <- diff_vars[f]
       samplev <- sample_vars[f]
       dayv <- day_vars[f]
