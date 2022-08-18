@@ -311,6 +311,8 @@ roc_plot(plot_data56$out, plot_data56$prob, dir = mdl_folder56, fn = "roc_plot.p
 ==============================================================================================
 UPDATED MODEL FOR DAYS 7-8
 
+DOES NOT WORK BECAUSE THE DATA IS HIGHLY CLASS-IMBALANCED (out of 39 cases, 37 survived are 2 died, leading to variable selection/model fitting to fail)
+
 ```{r}
 # Apply the Elastic Net variable selecion method on all the lab variables available for days 7-8
 
