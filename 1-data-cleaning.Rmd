@@ -59,7 +59,7 @@ for (var in k_vars) {
     print(var)
     m1 <- colMeans(df_labs[var], na.rm = TRUE)
     print(m1)
-    df_labs[var] <- (df_labs[var] - k_normal) * (df_labs[var] - k_normal)
+    df_labs[var] <- abs(df_labs[var] - k_normal)
 }
 df_labs[k_vars]
 ```
@@ -69,10 +69,26 @@ df_labs[k_vars]
 
 alb_vars <- paste0('Lab.AmLyteALB.D', 1:14)
 
+# Max ALB 5.5
+max_ALB = 8
+
+zeros <- c(1:nrow(df_labs)) * 0.0
+
 for (var in alb_vars) {
-    df_labs[var] <- 1 / df_labs[var]
+    df_labs[var] <- max_ALB - df_labs[var]
 }
+
+replace_with_zero <- function(x) {
+  ifelse(x < 0, yes = 0, no = x)
+}
+df_labs <-mutate_at(
+  df_labs,
+  alb_vars, 
+  replace_with_zero
+)
+
 df_labs[alb_vars]
+
 ```
 
 ```{r}

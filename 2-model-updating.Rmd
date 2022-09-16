@@ -18,8 +18,12 @@ library(ROCit)
 This notebook updates iteratively updates the base prognostic model applying recalibration, by adding additional lab variables in blocks of 2 days
 
 Some ideas to consider further:
-* If Elastic Net variable selection is applied on data w/out missing data, 
+* If Elastic Net variable selection is applied on data w/out missing data,
   generate frames by censoring a given percentage of data (e.g.: 10%) and apply MI
+* Try Bayesian Variable Selection:
+https://github.com/BasisResearch/millipede
+https://cran.r-project.org/web/packages/BayesVarSel/
+https://cran.r-project.org/web/packages/BayesVarSel/BayesVarSel.pdf
 
 ```{r message=FALSE, cache=F}
 source('./mdl-evaluation.R')
