@@ -145,6 +145,20 @@ cov12
 ```
 
 ```{r}
+library(BayesVarSel)
+
+
+formula <- as.formula(sat_imp_formula12)
+imp_data <- aregImpute(formula, data=data12, n.impute=1)
+for (i in 1:1) {
+    df <- getImpute(impute=imp_data, df=data12, im=i)
+    m <- Bvs(formula = out ~ lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12, data = df)
+    print(m)
+}
+```
+
+
+```{r}
 # Train the model for days 1-2 on the selected variables
 mdl_vars12 <- append(sel12$Variable, 'lp0')
 # mdl_vars12 <- mdl_vars12[! mdl_vars12 %in% c()] # Remove highly correlated variables
@@ -226,6 +240,19 @@ cov34
 ```
 
 ```{r}
+library(BayesVarSel)
+
+formula <- as.formula(sat_imp_formula34)
+imp_data <- aregImpute(formula, data=data34, n.impute=1)
+for (i in 1:1) {
+    df <- getImpute(impute=imp_data, df=data34, im=i)
+    m <- Bvs(formula = out ~ lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34, data = df)
+    print(m)
+}
+```
+
+
+```{r}
 # Train the model for days 3-4 on the selected variables
 mdl_vars34 <- append(sel34$Variable, 'lp12')
 mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
@@ -304,6 +331,19 @@ sel56
 ```{r}
 cov56 <- cor(data56[,sel56$Variable], use='pairwise') > 0.75
 cov56
+```
+
+```{r}
+library(BayesVarSel)
+
+formula <- as.formula(sat_imp_formula56)
+imp_data <- aregImpute(formula, data=data56, n.impute=1)
+for (i in 1:1) {
+    df <- getImpute(impute=imp_data, df=data56, im=i)
+    m <- Bvs(formula = out ~ lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56, data = df)
+    print(m)
+}
+
 ```
 
 ```{r}
