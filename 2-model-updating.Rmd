@@ -35,7 +35,7 @@ random_seed <- 151  # Setting random seed for reproducibility
 
 min_age <- 18       #  Minimum age for inclusion in analysis
 
-sel_thres <- 0.5    # Minimu fraction of models in which a variable appears as a positive predictor in order to be selected
+sel_thres <- 0.7    # Minimum fraction of models in which a variable appears as a positive predictor in order to be selected
 
 max_cor <- 0.75     # Maximum correlation between variables to be included in model
 ```
@@ -228,7 +228,7 @@ cov34
 ```{r}
 # Train the model for days 3-4 on the selected variables
 mdl_vars34 <- append(sel34$Variable, 'lp12')
-mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
+#mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
 mdl_vars34
 
 mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
@@ -352,7 +352,7 @@ plot_roc_perf(plot_data56$out, plot_data56$prob)
 ```
 
 ```{r}
-conf_matrix(plot_data56$out, plot_data56$prob, 0.6, mdl_folder56, "conf_matrix.txt")
+conf_matrix(plot_data56$out, plot_data56$prob, 0.3, mdl_folder56, "conf_matrix.txt")
 ```
 
 ==============================================================================================
