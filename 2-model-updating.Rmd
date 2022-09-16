@@ -96,8 +96,19 @@ prob0 <- 1 / (1 + exp(-pred0))                                         # predict
 # Generate the data frame with the data needed for the calibration and ROC plots
 plot_data0 <- data.frame(out = data0$out, logodds = pred0, prob = prob0)
 
-cal_plot(base_model, plot_data0, "original", "prob", model_label = '', dir = mdl_folder0, fn = "cal_plot.pdf")
+cal_plot(base_model, plot_data0, "prob", model_label = '', dir = mdl_folder0, fn = "cal_plot.pdf")
+cal_c0 <- cal_coeff(plot_data0, "prob", mdl_folder0, "cal_plot_coefficients.txt")
+print(cal_c0)
+
 roc_plot(data0$out, prob0, dir = mdl_folder0, fn = "roc_plot.pdf")
+```
+
+```{r}
+plot_roc_perf(plot_data0$out, plot_data0$prob)
+```
+
+```{r}
+conf_matrix(plot_data0$out, plot_data0$prob, 0.5, mdl_folder0, "conf_matrix.txt")
 ```
 
 ==============================================================================================
@@ -166,8 +177,19 @@ probs12 <- 1 / (1 + exp(-pred12))  # prediction as probability response
 # Generate the data frame with the data needed for the calibration and ROC plots
 plot_data12 <- data.frame(out = full_data12$out, logodds = pred12, prob = probs12)
 
-cal_plot(model12, plot_data12, "original", "prob", model_label = '', dir = mdl_folder12, fn = "cal_plot.pdf")
+cal_plot(model12, plot_data12, "prob", model_label = '', dir = mdl_folder12, fn = "cal_plot.pdf")
+cal_c12 <- cal_coeff(plot_data12, "prob", mdl_folder12, "cal_plot_coefficients.txt")
+print(cal_c12)
+
 roc_plot(plot_data12$out, plot_data12$prob, dir = mdl_folder12, fn = "roc_plot.pdf")
+```
+
+```{r}
+plot_roc_perf(plot_data12$out, plot_data12$prob)
+```
+
+```{r}
+conf_matrix(plot_data12$out, plot_data12$prob, 0.5, mdl_folder12, "conf_matrix.txt")
 ```
 
 ==============================================================================================
@@ -236,8 +258,19 @@ probs34 <- 1 / (1 + exp(-pred34))  # prediction as probability response
 # Generate the data frame with the data needed for the calibration and ROC plots
 plot_data34 <- data.frame(out = full_data34$out, logodds = pred34, prob = probs34)
 
-cal_plot(model34, plot_data34, "original", "prob", model_label = '', dir = mdl_folder34, fn = "cal_plot.pdf")
+cal_plot(model34, plot_data34, "prob", model_label = '', dir = mdl_folder34, fn = "cal_plot.pdf")
+cal_c34 <- cal_coeff(plot_data34, "prob", mdl_folder34, "cal_plot_coefficients.txt")
+print(cal_c34)
+
 roc_plot(plot_data34$out, plot_data34$prob, dir = mdl_folder34, fn = "roc_plot.pdf")
+```
+
+```{r}
+plot_roc_perf(plot_data34$out, plot_data34$prob)
+```
+
+```{r}
+conf_matrix(plot_data34$out, plot_data34$prob, 0.4, mdl_folder34, "conf_matrix.txt")
 ```
 
 ==============================================================================================
@@ -308,8 +341,19 @@ probs56 <- 1 / (1 + exp(-pred56))  # prediction as probability response
 # Generate the data frame with the data needed for the calibration and ROC plots
 plot_data56 <- data.frame(out = full_data56$out, logodds = pred56, prob = probs56)
 
-cal_plot(model56, plot_data56, "original", "prob", model_label = '', dir = mdl_folder56, fn = "cal_plot.pdf")
+cal_plot(model56, plot_data56, "prob", model_label = '', dir = mdl_folder56, fn = "cal_plot.pdf")
+cal_c56 <- cal_coeff(plot_data56, "prob", mdl_folder56, "cal_plot_coefficients.txt")
+print(cal_c56)
+
 roc_plot(plot_data56$out, plot_data56$prob, dir = mdl_folder56, fn = "roc_plot.pdf")
+```
+
+```{r}
+plot_roc_perf(plot_data56$out, plot_data56$prob)
+```
+
+```{r}
+conf_matrix(plot_data56$out, plot_data56$prob, 0.6, mdl_folder56, "conf_matrix.txt")
 ```
 
 ==============================================================================================
