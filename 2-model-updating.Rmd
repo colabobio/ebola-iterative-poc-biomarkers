@@ -35,6 +35,8 @@ random_seed <- 151  # Setting random seed for reproducibility
 
 min_age <- 18       #  Minimum age for inclusion in analysis
 
+sel_thres <- 0.5    # Minimu fraction of models in which a variable appears as a positive predictor in order to be selected
+
 max_cor <- 0.75     # Maximum correlation between variables to be included in model
 ```
 
@@ -134,13 +136,12 @@ varf12
 
 ```{r}
 # Apply threshold
-day12_sel_thres <- 0.5
-sel12 <- varf12 %>% filter(Freq > day12_sel_thres)
+sel12 <- varf12 %>% filter(Freq > sel_thres)
 sel12
 ```
 
 ```{r}
-cov12 <- cor(data12[,sel12$Variable], use='pairwise') > 0.75
+cov12 <- cor(data12[,sel12$Variable], use='pairwise') > max_cor
 cov12
 ```
 
@@ -215,13 +216,12 @@ varf34
 
 ```{r}
 # Apply threshold
-day34_sel_thres <- 0.5
-sel34 <- varf34 %>% filter(Freq > day34_sel_thres)
+sel34 <- varf34 %>% filter(Freq > sel_thres)
 sel34
 ```
 
 ```{r}
-cov34 <- cor(data34[,sel34$Variable], use='pairwise') > 0.75
+cov34 <- cor(data34[,sel34$Variable], use='pairwise') > max_cor
 cov34
 ```
 
@@ -296,13 +296,12 @@ varf56
 
 ```{r}
 # Apply threshold
-day56_sel_thres <- 0.5
-sel56 <- varf56 %>% filter(Freq > day56_sel_thres)
+sel56 <- varf56 %>% filter(Freq > sel_thres)
 sel56
 ```
 
 ```{r}
-cov56 <- cor(data56[,sel56$Variable], use='pairwise') > 0.75
+cov56 <- cor(data56[,sel56$Variable], use='pairwise') > max_cor
 cov56
 ```
 
@@ -381,13 +380,12 @@ varf78
 
 ```{r}
 # Apply threshold
-day78_sel_thres <- 0.5
-sel78 <- varf78 %>% filter(Freq > day78_sel_thres)
+sel78 <- varf78 %>% filter(Freq > sel_thres)
 sel78
 ```
 
 ```{r}
-cov78 <- cor(data78[,sel78$Variable], use='pairwise') > 0.75
+cov78 <- cor(data78[,sel78$Variable], use='pairwise') > max_cor
 cov78
 ```
 
