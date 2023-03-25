@@ -159,13 +159,13 @@ generateModel <- function(rseed, nimp, nboot, nknots, imp_formula, model_formula
   
   # Impute data and fit pooled model
   imp_data <- aregImpute(as.formula(imp_formula), data=train_data, n.impute=nimp, nk=nknots)
-  model <- fit.mult.impute(as.formula(model_formula), lrm, imp_data, data=train_data)
+  model <- fit.mult.impute(as.formula(model_formula), lrm, imp_data, data=train_data, fitargs=list(x=TRUE, y=TRUE))
   
   save(imp_formula, model_formula, train_data, imp_data, model, rseed, nimp, nboot, file =  paste0(dir, "/model.RData"))
   
   # Calculate ANOVA and validation/calibration
   mdl_anv <- anova(model)
-  mdl_upd <- update(model, x=TRUE, y=TRUE)
+  mdl_upd <- update(model)
   mdl_val <- validate(mdl_upd, B=nboot)
   mdl_cal <- calibrate(mdl_upd, B=nboot)
   
