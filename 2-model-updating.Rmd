@@ -31,7 +31,7 @@ source('./mdl-selection.R')
 
 num_imp <-100       # Number of multiple imputations
 num_boot <- 200     # Number of bootstrap samples
-random_seed <- 151  # Setting random seed for reproducibility
+random_seed <- 161  # Setting random seed for reproducibility
 
 min_age <- 18       #  Minimum age for inclusion in analysis
 
@@ -228,10 +228,12 @@ cov34
 ```{r}
 # Train the model for days 3-4 on the selected variables
 mdl_vars34 <- append(sel34$Variable, 'lp12')
+mdl_vars34 <- append(mdl_vars34, 'ct34')
+
 #mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
 mdl_vars34
 
-mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
+mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34 + ct34"
 mdl_lgr_formula34 <- paste('out', paste(mdl_vars34, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula34
 
@@ -270,7 +272,7 @@ plot_roc_perf(plot_data34$out, plot_data34$prob)
 ```
 
 ```{r}
-conf_matrix(plot_data34$out, plot_data34$prob, 0.4, mdl_folder34, "conf_matrix.txt")
+conf_matrix(plot_data34$out, plot_data34$prob, 0.36, mdl_folder34, "conf_matrix.txt")
 ```
 
 ==============================================================================================
@@ -308,10 +310,11 @@ cov56
 ```{r}
 # Train the model for days 5-6 on the selected variables
 mdl_vars56 <- append(sel56$Variable, 'lp34')
+mdl_vars56 <- append(mdl_vars56, 'ct56')
 #mdl_vars56 <- mdl_vars56[! mdl_vars56 %in% c()] # Remove highly correlated variables
 mdl_vars56
 
-mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
+mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56 + ct56"
 mdl_lgr_formula56 <- paste('out', paste(mdl_vars56, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula56
 
