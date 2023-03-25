@@ -355,7 +355,7 @@ plot_roc_perf(plot_data56$out, plot_data56$prob)
 ```
 
 ```{r}
-conf_matrix(plot_data56$out, plot_data56$prob, 0.3, mdl_folder56, "conf_matrix.txt")
+conf_matrix(plot_data56$out, plot_data56$prob, 0.15, mdl_folder56, "conf_matrix.txt")
 ```
 
 ==============================================================================================
