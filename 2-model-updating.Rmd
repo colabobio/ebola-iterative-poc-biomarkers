@@ -37,7 +37,7 @@ min_age <- 18       #  Minimum age for inclusion in analysis
 
 sel_thres <- 0.7    # Minimum fraction of models in which a variable appears as a positive predictor in order to be selected
 
-max_cor <- 0.75     # Maximum correlation between variables to be included in model
+max_cor <- 0.65     # Maximum correlation between variables to be included in model
 ```
 
 ```{r}
@@ -141,7 +141,7 @@ sel12
 ```
 
 ```{r}
-cov12 <- cor(data12[,sel12$Variable], use='pairwise') > max_cor
+cov12 <- round(cor(data12[,sel12$Variable], use='pairwise'), digits=2) > max_cor
 cov12
 ```
 
@@ -221,7 +221,7 @@ sel34
 ```
 
 ```{r}
-cov34 <- cor(data34[,sel34$Variable], use='pairwise') > max_cor
+cov34 <- round(cor(data34[,sel34$Variable], use='pairwise'), digits=2) > max_cor
 cov34
 ```
 
@@ -303,7 +303,7 @@ sel56
 ```
 
 ```{r}
-cov56 <- cor(data56[,sel56$Variable], use='pairwise') > max_cor
+cov56 <- round(cor(data56[,sel56$Variable], use='pairwise'), digits=2)
 cov56
 ```
 
