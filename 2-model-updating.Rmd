@@ -303,7 +303,7 @@ sel56
 ```
 
 ```{r}
-cov56 <- round(cor(data56[,sel56$Variable], use='pairwise'), digits=2)
+cov56 <- round(cor(data56[,sel56$Variable], use='pairwise'), digits=2) > max_cor
 cov56
 ```
 
