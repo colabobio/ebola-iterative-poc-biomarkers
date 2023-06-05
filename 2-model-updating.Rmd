@@ -37,13 +37,13 @@ min_age <- 18       #  Minimum age for inclusion in analysis
 
 sel_thres <- 0.7    # Minimum fraction of models in which a variable appears as a positive predictor in order to be selected
 
-max_cor <- 0.75     # Maximum correlation between variables to be included in model
+max_cor <- 0.65     # Maximum correlation between variables to be included in model
 ```
 
 ```{r}
 # Load the data, remove children, remove patients with less than 1 day of stay, and transform Ct values into Z-scores
 
-data <- read.csv('data.csv')
+data <- read.csv('./data/data-cleaned.csv')
 data <- data %>% filter(age >= min_age)
 data <- data %>% filter(days > 0)
 
@@ -87,7 +87,7 @@ data
 ```{r}
 # Plot calibration and ROC plots of the base model
 
-mdl_folder0 <- "model-0"
+mdl_folder0 <- "./models/model-0"
 dir.create(mdl_folder0)
 
 data0 <- all_data0[complete.cases(all_data0),]
@@ -141,7 +141,7 @@ sel12
 ```
 
 ```{r}
-cov12 <- cor(data12[,sel12$Variable], use='pairwise') > max_cor
+cov12 <- round(cor(data12[,sel12$Variable], use='pairwise'), digits=2) > max_cor
 cov12
 ```
 
@@ -155,7 +155,7 @@ mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 
 mdl_lgr_formula12 <- paste('out', paste(mdl_vars12, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula12
 
-mdl_folder12 <- "model-days12"
+mdl_folder12 <- "./models/model-days12"
 dir.create(mdl_folder12)
 
 model12 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula12, mdl_lgr_formula12, data12, mdl_vars12, mdl_folder12)
@@ -221,7 +221,7 @@ sel34
 ```
 
 ```{r}
-cov34 <- cor(data34[,sel34$Variable], use='pairwise') > max_cor
+cov34 <- round(cor(data34[,sel34$Variable], use='pairwise'), digits=2) > max_cor
 cov34
 ```
 
@@ -235,7 +235,7 @@ mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34
 mdl_lgr_formula34 <- paste('out', paste(mdl_vars34, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula34
 
-mdl_folder34 <- "model-days34"
+mdl_folder34 <- "./models/model-days34"
 dir.create(mdl_folder34)
 
 model34 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula34, mdl_lgr_formula34, data34, mdl_vars34, mdl_folder34)
@@ -277,7 +277,7 @@ conf_matrix(plot_data34$out, plot_data34$prob, 0.4, mdl_folder34, "conf_matrix.t
 UPDATED MODEL FOR DAYS 5-6
 
 ```{r}
-# Apply the Elastic Net variable selecion method on all the lab variables available for days 5-6
+# Apply the Elastic Net variable selection method on all the lab variables available for days 5-6
 
 sat_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
 
@@ -301,7 +301,7 @@ sel56
 ```
 
 ```{r}
-cov56 <- cor(data56[,sel56$Variable], use='pairwise') > max_cor
+cov56 <- round(cor(data56[,sel56$Variable], use='pairwise'), digits=2) > max_cor
 cov56
 ```
 
@@ -315,7 +315,7 @@ mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56
 mdl_lgr_formula56 <- paste('out', paste(mdl_vars56, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula56
 
-mdl_folder56 <- "model-days56"
+mdl_folder56 <- "./models/model-days56"
 dir.create(mdl_folder56)
 
 # setting number of knots to zero based on this discussion:
@@ -359,71 +359,3 @@ conf_matrix(plot_data56$out, plot_data56$prob, 0.3, mdl_folder56, "conf_matrix.t
 UPDATED MODEL FOR DAYS 7-8
 
 DOES NOT WORK BECAUSE THE DATA IS HIGHLY CLASS-IMBALANCED (out of 39 cases, 37 survived are 2 died, leading to variable selection/model fitting to fail)
-
-```{r}
-# Apply the Elastic Net variable selecion method on all the lab variables available for days 7-8
-
-sat_imp_formula78 <- "~out + lp56 + alb78 + alt78 + ast78 + bun78 + ck78 + cre78 + crp78 + k78"
-
-vars78 <- c('out', 'lp56', 'alb78', 'alt78', 'ast78', 'bun78', 'ck78', 'cre78', 'crp78', 'k78')
-data78 <- data[complete.cases(data[, c('lp56')]),]
-data78 <- data78 %>% filter(days > 6)
-data78
-
-sout78 <- selectVariables(random_seed, num_imp, sat_imp_formula78, data78, TRUE)
-
-varf78 <- data.frame(unlist(sout78$names), unlist(sout78$counts))
-names(varf78) <- c("Variable", "Freq")
-varf78 <- varf78 %>% filter(Variable != "lp56" & Variable != "(Intercept)")
-varf78
-```
-
-```{r}
-# Apply threshold
-sel78 <- varf78 %>% filter(Freq > sel_thres)
-sel78
-```
-
-```{r}
-cov78 <- cor(data78[,sel78$Variable], use='pairwise') > max_cor
-cov78
-```
-
-```{r}
-# Train the model for days 7-8 on the selected variables
-mdl_vars78 <- append(sel78$Variable, 'lp56')
-#mdl_vars78 <- mdl_vars78[! mdl_vars78 %in% c()] # Remove highly correlated variables
-mdl_vars78
-
-mdl_imp_formula78 <- "~out + lp56 + alb78 + alt78 + ast78 + bun78 + ck78 + cre78 + crp78 + k78"
-mdl_lgr_formula78 <- paste('out', paste(mdl_vars78, collapse=" + "), sep=" ~ ")
-mdl_lgr_formula78
-
-mdl_folder78 <- "model-days78"
-dir.create(mdl_folder78)
-
-# setting number of knots to zero based on this discussion:
-# https://stats.stackexchange.com/questions/117383/impute-missing-values-using-aregimpute
-model78 <- generateModel(random_seed, num_imp, num_boot, 0, mdl_imp_formula78, mdl_lgr_formula78, data78, mdl_vars78, mdl_folder78)
-
-# Add the logit contribution from the model for days 7-8 to the dataframe
-data['lp78'] <- predict(model78, data)
-```
-
-```{r}
-# Generate the calibration and ROC plots for the models for days 7-8
-
-vars <- append(mdl_vars78, 'out')
-df <- data %>% select(all_of(vars))
-full_data78 <- df[complete.cases(df),]
-full_data78
-
-pred78 <- predict(model78, full_data78) # prediction in log-odds (probabilities on logit scale)
-probs78 <- 1 / (1 + exp(-pred78))  # prediction as probability response
-
-# Generate the data frame with the data needed for the calibration and ROC plots
-plot_data78 <- data.frame(out = full_data78$out, logodds = pred78, prob = probs78)
-
-cal_plot(model78, plot_data78, "original", "prob", model_label = '', dir = mdl_folder78, fn = "cal_plot.pdf")
-roc_plot(plot_data78$out, plot_data78$prob, dir = mdl_folder78, fn = "roc_plot.pdf")
-```

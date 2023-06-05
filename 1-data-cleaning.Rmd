@@ -15,7 +15,7 @@ library(lubridate)
 ```
 
 ```{r}
-df_raw <- read.csv('./DRC_EbolaPos_Database_2018Outbreak_Coded_2021_08_13-numeric.csv', na.strings=c(""))
+df_raw <- read.csv('./data/DRC_EbolaPos_Database_2018Outbreak_Coded_2021_08_13.csv', na.strings=c(""))
 ```
 
 ```{r}
@@ -235,5 +235,5 @@ df_final
 
 
 ```{r}
-write.csv(df_final, './data.csv', row.names = F)
+write.csv(df_final, './data/data-cleaned.csv', row.names = F)
 ```
