@@ -3,7 +3,7 @@ fit.mult.impute(formula = as.formula(model_formula), fitter = lrm,
         y = TRUE))
 
       Assumption Parameters d.f.
-crp56 asis                  1   
 bun56 asis                  1   
+crp56 asis                  1   
 lp34  asis                  1   
 ct56  asis                  1   

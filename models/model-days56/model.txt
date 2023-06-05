@@ -4,17 +4,17 @@ fit.mult.impute(formula = as.formula(model_formula), fitter = lrm,
     xtrans = imp_data, data = train_data, fitargs = list(x = TRUE, 
         y = TRUE))
 
-                        Model Likelihood    Discrimination    Rank Discrim.    
-                              Ratio Test           Indexes          Indexes    
-Obs             49    LR chi2      28.47    R2       0.727    C       0.961    
- 0              40    d.f.             4    R2(4,49) 0.392    Dxy     0.922    
- 1               9    Pr(> chi2) <0.0001    R2(4,22) 0.680    gamma   0.922    
-max |deriv| 0.0007                          Brier    0.057    tau-a   0.273    
+                       Model Likelihood     Discrimination    Rank Discrim.    
+                             Ratio Test            Indexes          Indexes    
+Obs             49    LR chi2     26.37     R2       0.688    C       0.950    
+ 0              40    d.f.            4     R2(4,49) 0.364    Dxy     0.900    
+ 1               9    Pr(> chi2) 0.0001    R2(4,20.1)0.646    gamma   0.900    
+max |deriv| 0.0002                          Brier    0.062    tau-a   0.264    
 
           Coef    S.E.   Wald Z Pr(>|Z|)
-Intercept -2.9764 2.9254 -1.02  0.3089  
-crp56      0.0226 0.0208  1.09  0.2777  
-bun56      0.0195 0.0488  0.40  0.6897  
-lp34       1.4482 1.0702  1.35  0.1760  
-ct56      -0.2007 0.8448 -0.24  0.8122  
+Intercept -3.6909 2.8079 -1.31  0.1887  
+bun56      0.0320 0.0454  0.70  0.4809  
+crp56      0.0203 0.0184  1.11  0.2691  
+lp34       0.9162 0.7634  1.20  0.2301  
+ct56      -0.1887 0.7940 -0.24  0.8122  
 
