@@ -1,0 +1,22 @@
+Logistic Regression Model
+
+fit.mult.impute(formula = as.formula(model_formula), fitter = lrm, 
+    xtrans = imp_data, data = train_data, fitargs = list(x = TRUE, 
+        y = TRUE))
+
+                       Model Likelihood      Discrimination    Rank Discrim.    
+                             Ratio Test             Indexes          Indexes    
+Obs           307    LR chi2     123.58      R2       0.441    C       0.849    
+ 0            170    d.f.             6      R2(6,307)0.316    Dxy     0.697    
+ 1            137    Pr(> chi2) <0.0001    R2(6,227.6)0.401    gamma   0.697    
+max |deriv| 0.004                            Brier    0.159    tau-a   0.345    
+
+          Coef    S.E.   Wald Z Pr(>|Z|)
+Intercept -2.9321 0.7716 -3.80  0.0001  
+ck12       0.0005 0.0003  1.80  0.0715  
+bun12      0.0172 0.0106  1.63  0.1039  
+alb12      2.0118 1.7125  1.17  0.2401  
+alt12      0.0008 0.0008  1.10  0.2721  
+ast12      0.0002 0.0003  0.73  0.4662  
+lp0        0.4455 0.1765  2.52  0.0116  
+

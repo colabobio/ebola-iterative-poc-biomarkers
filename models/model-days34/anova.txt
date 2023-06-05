@@ -1,0 +1,10 @@
+                Wald Statistics          Response: out 
+
+ Factor     Chi-Square d.f. P     
+ crp34       1.13      1    0.2885
+ k34         0.04      1    0.8469
+ alb34       0.48      1    0.4877
+ bun34       0.48      1    0.4899
+ lp12        0.94      1    0.3323
+ ct34        0.71      1    0.3994
+ TOTAL      12.09      6    0.0601

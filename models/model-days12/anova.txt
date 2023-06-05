@@ -1,0 +1,10 @@
+                Wald Statistics          Response: out 
+
+ Factor     Chi-Square d.f. P     
+ ck12        3.25      1    0.0715
+ bun12       2.64      1    0.1039
+ alb12       1.38      1    0.2401
+ alt12       1.21      1    0.2721
+ ast12       0.53      1    0.4662
+ lp0         6.37      1    0.0116
+ TOTAL      28.50      6    0.0001

@@ -1,0 +1,8 @@
+"Term","Coefficient","Type","Knots"
+"Intercept",-2.93209222243382,"linear","none"
+"ck12",0.000453754404217336,"linear","none"
+"bun12",0.0171827935693068,"linear","none"
+"alb12",2.01182794035645,"linear","none"
+"alt12",0.000830076276706969,"linear","none"
+"ast12",0.000207674567582913,"linear","none"
+"lp0",0.445521987360201,"linear","none"

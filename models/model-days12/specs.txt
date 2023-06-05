@@ -1,0 +1,11 @@
+fit.mult.impute(formula = as.formula(model_formula), fitter = lrm, 
+    xtrans = imp_data, data = train_data, fitargs = list(x = TRUE, 
+        y = TRUE))
+
+      Assumption Parameters d.f.
+ck12  asis                  1   
+bun12 asis                  1   
+alb12 asis                  1   
+alt12 asis                  1   
+ast12 asis                  1   
+lp0   asis                  1   
