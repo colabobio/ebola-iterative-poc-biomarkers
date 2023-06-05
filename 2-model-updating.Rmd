@@ -117,7 +117,7 @@ conf_matrix(plot_data0$out, plot_data0$prob, 0.5, mdl_folder0, "conf_matrix.txt"
 UPDATED MODEL FOR DAYS 1-2
 
 ```{r}
-# Apply the Elastic Net variable selecion method on all the lab variables available for days 1-2
+# Apply the Elastic Net variable selection method on all the lab variables available for days 1-2
 
 sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
 
@@ -197,7 +197,7 @@ conf_matrix(plot_data12$out, plot_data12$prob, 0.5, mdl_folder12, "conf_matrix.t
 UPDATED MODEL FOR DAYS 3-4
 
 ```{r}
-# Apply the Elastic Net variable selecion method on all the lab variables available for days 3-4
+# Apply the Elastic Net variable selection method on all the lab variables available for days 3-4
 
 sat_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
 

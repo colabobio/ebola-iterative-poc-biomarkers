@@ -4,5 +4,5 @@ lm(formula = bin_prob ~ bin_pred, data = data)
 
 Coefficients:
 (Intercept)     bin_pred  
-   -0.04946      0.89666  
+   -0.04617      0.90684  
 
