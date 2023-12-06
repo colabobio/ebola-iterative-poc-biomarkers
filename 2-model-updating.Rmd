@@ -114,126 +114,13 @@ conf_matrix(plot_data0$out, plot_data0$prob, 0.5, mdl_folder0, "conf_matrix.txt"
 ```
 
 ==============================================================================================
-UPDATED MODEL FOR DAYS 1-2
-
-```{r}
-# Apply the Elastic Net variable selection method on all the lab variables available for days 1-2
-
-sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
-
-vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12')
-data12 <- data[complete.cases(data[, c('lp0')]),]
-data12 <- data12 %>% filter(days > 0)
-data12
-
-sout12 <- selectVariables(random_seed, num_imp, sat_imp_formula12, data12, TRUE)
-
-varf12 <- data.frame(unlist(sout12$names), unlist(sout12$counts))
-names(varf12) <- c("Variable", "Freq")
-varf12 <- varf12 %>% filter(Variable != "lp0" & Variable != "(Intercept)")
-varf12
-```
-
-```{r}
-# Apply threshold
-sel12 <- varf12 %>% filter(Freq > sel_thres)
-sel12
-```
-
-```{r}
-cov12 <- round(cor(data12[,sel12$Variable], use='pairwise'), digits=2) > max_cor
-cov12
-```
-
-```{r}
-# Train the model for days 1-2 on the selected variables
-mdl_vars12 <- append(sel12$Variable, 'lp0')
-# mdl_vars12 <- mdl_vars12[! mdl_vars12 %in% c()] # Remove highly correlated variables
-mdl_vars12
-
-mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
-mdl_lgr_formula12 <- paste('out', paste(mdl_vars12, collapse=" + "), sep=" ~ ")
-mdl_lgr_formula12
-
-mdl_folder12 <- "./models/model-days12"
-dir.create(mdl_folder12)
-
-model12 <- generateModel(random_seed, num_imp, num_boot, 3, mdl_imp_formula12, mdl_lgr_formula12, data12, mdl_vars12, mdl_folder12)
-
-# Add the logit contribution from the model for days 1-2 to the dataframe
-data['lp12'] <- predict(model12, data)
-```
-
-```{r}
-# Generate the calibration and ROC plots for the models for days 1-2
-
-vars <- append(mdl_vars12, 'out')
-df <- data %>% select(all_of(vars))
-full_data12 <- df[complete.cases(df),]
-full_data12
-
-pred12 <- predict(model12, full_data12) # prediction in log-odds (probabilities on logit scale)
-probs12 <- 1 / (1 + exp(-pred12))  # prediction as probability response
-
-# Generate the data frame with the data needed for the calibration and ROC plots
-plot_data12 <- data.frame(out = full_data12$out, logodds = pred12, prob = probs12)
-
-cal_plot(model12, plot_data12, "prob", model_label = '', dir = mdl_folder12, fn = "cal_plot.pdf")
-cal_c12 <- cal_coeff(plot_data12, "prob", mdl_folder12, "cal_plot_coefficients.txt")
-print(cal_c12)
-
-roc_plot(plot_data12$out, plot_data12$prob, dir = mdl_folder12, fn = "roc_plot.pdf")
-```
-
-```{r}
-plot_roc_perf(plot_data12$out, plot_data12$prob)
-```
-
-```{r}
-conf_matrix(plot_data12$out, plot_data12$prob, 0.5, mdl_folder12, "conf_matrix.txt")
-```
-
-==============================================================================================
 UPDATED MODEL FOR DAYS 3-4
 
 ```{r}
-# Apply the Elastic Net variable selection method on all the lab variables available for days 3-4
+# Train the model for days 3-4
+mdl_vars34 <- c('lp12', 'ct34')
 
-sat_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
-
-vars34 <- c('out', 'lp12', 'alb34', 'alt34', 'ast34', 'bun34', 'ck34', 'cre34', 'crp34', 'k34')
-data34 <- data[complete.cases(data[, c('lp12')]),]
-data34 <- data34 %>% filter(days > 2)
-data34
-
-sout34 <- selectVariables(random_seed, num_imp, sat_imp_formula34, data34, TRUE)
-
-varf34 <- data.frame(unlist(sout34$names), unlist(sout34$counts))
-names(varf34) <- c("Variable", "Freq")
-varf34 <- varf34 %>% filter(Variable != "lp12" & Variable != "(Intercept)")
-varf34
-```
-
-```{r}
-# Apply threshold
-sel34 <- varf34 %>% filter(Freq > sel_thres)
-sel34
-```
-
-```{r}
-cov34 <- round(cor(data34[,sel34$Variable], use='pairwise'), digits=2) > max_cor
-cov34
-```
-
-```{r}
-# Train the model for days 3-4 on the selected variables
-mdl_vars34 <- append(sel34$Variable, 'lp12')
-mdl_vars34 <- append(mdl_vars34, 'ct34')
-
-#mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
-mdl_vars34
-
-mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34 + ct34"
+mdl_imp_formula34 <- "~out + lp0 + ct34"
 mdl_lgr_formula34 <- paste('out', paste(mdl_vars34, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula34
 
@@ -279,42 +166,11 @@ conf_matrix(plot_data34$out, plot_data34$prob, 0.36, mdl_folder34, "conf_matrix.
 UPDATED MODEL FOR DAYS 5-6
 
 ```{r}
-# Apply the Elastic Net variable selection method on all the lab variables available for days 5-6
-
-sat_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
-
-vars56 <- c('out', 'lp34', 'alb56', 'alt56', 'ast56', 'bun56', 'ck56', 'cre56', 'crp56', 'k56')
-data56 <- data[complete.cases(data[, c('lp34')]),]
-data56 <- data56 %>% filter(days > 4)
-data56
-
-sout56 <- selectVariables(random_seed, num_imp, sat_imp_formula56, data56, TRUE)
-
-varf56 <- data.frame(unlist(sout56$names), unlist(sout56$counts))
-names(varf56) <- c("Variable", "Freq")
-varf56 <- varf56 %>% filter(Variable != "lp34" & Variable != "(Intercept)")
-varf56
-```
-
-```{r}
-# Apply threshold
-sel56 <- varf56 %>% filter(Freq > sel_thres)
-sel56
-```
-
-```{r}
-cov56 <- round(cor(data56[,sel56$Variable], use='pairwise'), digits=2) > max_cor
-cov56
-```
-
-```{r}
 # Train the model for days 5-6 on the selected variables
-mdl_vars56 <- append(sel56$Variable, 'lp34')
-mdl_vars56 <- append(mdl_vars56, 'ct56')
-#mdl_vars56 <- mdl_vars56[! mdl_vars56 %in% c()] # Remove highly correlated variables
-mdl_vars56
+mdl_vars56 <- c('lp34', 'ct56')
 
-mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56 + ct56"
+mdl_imp_formula56 <- "~out + lp34 + ct56"
+
 mdl_lgr_formula56 <- paste('out', paste(mdl_vars56, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula56
 

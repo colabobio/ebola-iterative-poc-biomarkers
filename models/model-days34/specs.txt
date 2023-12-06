@@ -2,9 +2,6 @@ fit.mult.impute(formula = as.formula(model_formula), fitter = lrm,
     xtrans = imp_data, data = train_data, fitargs = list(x = TRUE, 
         y = TRUE))
 
-      Assumption Parameters d.f.
-k34   asis                  1   
-crp34 asis                  1   
-bun34 asis                  1   
-lp12  asis                  1   
-ct34  asis                  1   
+     Assumption Parameters d.f.
+lp12 asis                  1   
+ct34 asis                  1   
