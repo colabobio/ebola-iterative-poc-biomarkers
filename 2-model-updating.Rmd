@@ -31,7 +31,7 @@ source('./mdl-selection.R')
 
 num_imp <-100       # Number of multiple imputations
 num_boot <- 200     # Number of bootstrap samples
-random_seed <- 161  # Setting random seed for reproducibility
+random_seed <- 879  # Setting random seed for reproducibility
 
 min_age <- 18       #  Minimum age for inclusion in analysis
 
@@ -119,9 +119,9 @@ UPDATED MODEL FOR DAYS 1-2
 ```{r}
 # Apply the Elastic Net variable selection method on all the lab variables available for days 1-2
 
-sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
+sat_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12 + glu12"
 
-vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12')
+vars12 <- c('out', 'lp0', 'alb12', 'alt12', 'ast12', 'bun12', 'ck12', 'cre12', 'crp12', 'k12', 'glu12')
 data12 <- data[complete.cases(data[, c('lp0')]),]
 data12 <- data12 %>% filter(days > 0)
 data12
@@ -151,7 +151,7 @@ mdl_vars12 <- append(sel12$Variable, 'lp0')
 # mdl_vars12 <- mdl_vars12[! mdl_vars12 %in% c()] # Remove highly correlated variables
 mdl_vars12
 
-mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
+mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12 + glu12"
 mdl_lgr_formula12 <- paste('out', paste(mdl_vars12, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula12
 
@@ -199,9 +199,9 @@ UPDATED MODEL FOR DAYS 3-4
 ```{r}
 # Apply the Elastic Net variable selection method on all the lab variables available for days 3-4
 
-sat_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34"
+sat_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34 + glu34"
 
-vars34 <- c('out', 'lp12', 'alb34', 'alt34', 'ast34', 'bun34', 'ck34', 'cre34', 'crp34', 'k34')
+vars34 <- c('out', 'lp12', 'alb34', 'alt34', 'ast34', 'bun34', 'ck34', 'cre34', 'crp34', 'k34', 'glu34')
 data34 <- data[complete.cases(data[, c('lp12')]),]
 data34 <- data34 %>% filter(days > 2)
 data34
@@ -233,7 +233,7 @@ mdl_vars34 <- append(mdl_vars34, 'ct34')
 #mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
 mdl_vars34
 
-mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34 + ct34"
+mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34 + ct34 + glu34"
 mdl_lgr_formula34 <- paste('out', paste(mdl_vars34, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula34
 
@@ -281,9 +281,9 @@ UPDATED MODEL FOR DAYS 5-6
 ```{r}
 # Apply the Elastic Net variable selection method on all the lab variables available for days 5-6
 
-sat_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56"
+sat_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56 + glu56"
 
-vars56 <- c('out', 'lp34', 'alb56', 'alt56', 'ast56', 'bun56', 'ck56', 'cre56', 'crp56', 'k56')
+vars56 <- c('out', 'lp34', 'alb56', 'alt56', 'ast56', 'bun56', 'ck56', 'cre56', 'crp56', 'k56', 'glu56')
 data56 <- data[complete.cases(data[, c('lp34')]),]
 data56 <- data56 %>% filter(days > 4)
 data56
@@ -314,7 +314,7 @@ mdl_vars56 <- append(mdl_vars56, 'ct56')
 #mdl_vars56 <- mdl_vars56[! mdl_vars56 %in% c()] # Remove highly correlated variables
 mdl_vars56
 
-mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56 + ct56"
+mdl_imp_formula56 <- "~out + lp34 + alb56 + alt56 + ast56 + bun56 + ck56 + cre56 + crp56 + k56 + ct56 + glu56"
 mdl_lgr_formula56 <- paste('out', paste(mdl_vars56, collapse=" + "), sep=" ~ ")
 mdl_lgr_formula56
 

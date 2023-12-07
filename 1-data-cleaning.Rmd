@@ -19,8 +19,8 @@ df_raw <- read.csv('./data/DRC_EbolaPos_Database_2018Outbreak_Coded_2021_08_13.c
 ```
 
 ```{r}
-lab_vars <- c('Lab.CtNP', 'Lab.AmLyteBUN', 'Lab.AmLyteALT', 'Lab.AmLyteAST', 'Lab.AmLyteCK', 'Lab.AmLyteALB', 'Lab.AmLyteK', 'Lab.AmLyteCRE', 'Lab.AmLyteCRP')
-short_names <- c('Lab.CtNP'='ct', 'Lab.AmLyteBUN'='bun', 'Lab.AmLyteALT'='alt', 'Lab.AmLyteAST'='ast', 'Lab.AmLyteCK'='ck', 'Lab.AmLyteALB'='alb', 'Lab.AmLyteK'='k', 'Lab.AmLyteCRE'='cre', 'Lab.AmLyteCRP'='crp')
+lab_vars <- c('Lab.CtNP', 'Lab.AmLyteBUN', 'Lab.AmLyteALT', 'Lab.AmLyteAST', 'Lab.AmLyteCK', 'Lab.AmLyteALB', 'Lab.AmLyteK', 'Lab.AmLyteCRE', 'Lab.AmLyteCRP', 'Lab.AmLyteGLU')
+short_names <- c('Lab.CtNP'='ct', 'Lab.AmLyteBUN'='bun', 'Lab.AmLyteALT'='alt', 'Lab.AmLyteAST'='ast', 'Lab.AmLyteCK'='ck', 'Lab.AmLyteALB'='alb', 'Lab.AmLyteK'='k', 'Lab.AmLyteCRE'='cre', 'Lab.AmLyteCRP'='crp', 'Lab.AmLyteGLU'='glu')
 ```
 
 ```{r}
