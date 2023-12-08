@@ -47,6 +47,8 @@ data <- read.csv('./data/data-cleaned.csv')
 data <- data %>% filter(age >= min_age)
 data <- data %>% filter(days > 0)
 
+data <- data %>% filter(efftx == 1)
+
 data$ct12 <- (data$ct12 - mean(data$ct12, na.rm=T))/sd(data$ct12, na.rm=T)
 data$ct34 <- (data$ct34 - mean(data$ct34, na.rm=T))/sd(data$ct34, na.rm=T)
 data$ct56 <- (data$ct56 - mean(data$ct56, na.rm=T))/sd(data$ct56, na.rm=T)
@@ -148,7 +150,7 @@ cov12
 ```{r}
 # Train the model for days 1-2 on the selected variables
 mdl_vars12 <- append(sel12$Variable, 'lp0')
-# mdl_vars12 <- mdl_vars12[! mdl_vars12 %in% c()] # Remove highly correlated variables
+mdl_vars12 <- mdl_vars12[! mdl_vars12 %in% c('cre12')] # Remove highly correlated variables
 mdl_vars12
 
 mdl_imp_formula12 <- "~out + lp0 + alb12 + alt12 + ast12 + bun12 + ck12 + cre12 + crp12 + k12"
@@ -190,7 +192,7 @@ plot_roc_perf(plot_data12$out, plot_data12$prob)
 ```
 
 ```{r}
-conf_matrix(plot_data12$out, plot_data12$prob, 0.5, mdl_folder12, "conf_matrix.txt")
+conf_matrix(plot_data12$out, plot_data12$prob, 0.4, mdl_folder12, "conf_matrix.txt")
 ```
 
 ==============================================================================================
@@ -230,8 +232,8 @@ cov34
 mdl_vars34 <- append(sel34$Variable, 'lp12')
 mdl_vars34 <- append(mdl_vars34, 'ct34')
 
-#mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34')] # Remove highly correlated variables
-mdl_vars34
+mdl_vars34 <- mdl_vars34[! mdl_vars34 %in% c('cre34', 'crp34')] # Remove highly correlated variables
+#mdl_vars34
 
 mdl_imp_formula34 <- "~out + lp12 + alb34 + alt34 + ast34 + bun34 + ck34 + cre34 + crp34 + k34 + ct34"
 mdl_lgr_formula34 <- paste('out', paste(mdl_vars34, collapse=" + "), sep=" ~ ")
@@ -272,7 +274,7 @@ plot_roc_perf(plot_data34$out, plot_data34$prob)
 ```
 
 ```{r}
-conf_matrix(plot_data34$out, plot_data34$prob, 0.36, mdl_folder34, "conf_matrix.txt")
+conf_matrix(plot_data34$out, plot_data34$prob, 0.5, mdl_folder34, "conf_matrix.txt")
 ```
 
 ==============================================================================================

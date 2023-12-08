@@ -164,7 +164,7 @@ for (var in lab_vars) {
 ```{r}
 # Variable aggregation into final dataset
 
-df_final = data.frame(age=pull(df_raw, 'AD.Age'))
+df_final = data.frame(age=pull(df_raw, 'AD.Age'), tx=pull(df_raw, 'tx'), efftx=pull(df_raw, 'effectivetx'))
 df_final$out = ifelse(df_raw$S7.FinalStatus==0, 1,
                ifelse(df_raw$S7.FinalStatus==1, 0, 
                       df_raw$S7.FinalStatus))

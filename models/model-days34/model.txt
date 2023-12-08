@@ -6,16 +6,14 @@ fit.mult.impute(formula = as.formula(model_formula), fitter = lrm,
 
                        Model Likelihood     Discrimination    Rank Discrim.    
                              Ratio Test            Indexes          Indexes    
-Obs            91    LR chi2      36.82     R2       0.506    C       0.876    
- 0             70    d.f.             5     R2(5,91) 0.294    Dxy     0.751    
- 1             21    Pr(> chi2) <0.0001    R2(5,45.1)0.484    gamma   0.752    
-max |deriv| 0.009                           Brier    0.102    tau-a   0.265    
+Obs            74    LR chi2      46.56     R2       0.654    C       0.930    
+ 0             51    d.f.             3     R2(3,74) 0.442    Dxy     0.859    
+ 1             23    Pr(> chi2) <0.0001    R2(3,47.6)0.596    gamma   0.859    
+max |deriv| 2e-05                           Brier    0.095    tau-a   0.373    
 
           Coef    S.E.   Wald Z Pr(>|Z|)
-Intercept -2.3725 1.0309 -2.30  0.0214  
-k34        0.0811 0.2272  0.36  0.7210  
-crp34      0.0093 0.0087  1.07  0.2840  
-bun34      0.0207 0.0237  0.88  0.3813  
-lp12       0.5884 0.3457  1.70  0.0888  
-ct34      -0.3208 0.4525 -0.71  0.4783  
+Intercept -2.1576 1.4326 -1.51  0.1321  
+bun34      0.0514 0.0354  1.45  0.1467  
+lp12       0.6943 0.4195  1.66  0.0979  
+ct34      -0.7238 0.4784 -1.51  0.1303  
 
